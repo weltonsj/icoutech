@@ -1,0 +1,282 @@
+/* Root */
+:root {
+  --primary-color: #FD8A24;
+  --primary-color-hover: #e67e21;
+  --secondary-color: #605F54;
+  --secondary-color-hover: #4f4e4b;
+  --background-color-secondary: #f9f9f9;
+}
+
+/* Reset CSS */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  font-family: 'Arial', sans-serif;
+  color: #333;
+  background-color: #f9f9f9;
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* Nimação header */
+header {
+  height: 100vh;
+  animation: animeHeader 1s ease-in-out;
+}
+
+@keyframes animeHeader {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fade-in Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header Section */
+header {
+  background: url(../../imagens/banners/2002800-dc-chevron-hero-bg.avif) no-repeat;
+  background-position: center;
+  background-size: cover;
+  color: white;
+  text-align: center;
+  padding: 60px 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+header h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  animation: fadeIn 1s ease-in-out;
+}
+
+header p {
+  font-size: 1.2rem;
+  margin-top: 10px;
+  animation: fadeIn 1.5s ease-in-out;
+}
+
+/* Botão Conferir */
+.btn-primary {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: var(--secondary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  -webkit-tap-highlight-color: transparent;
+  margin: 2rem 0 0 0;
+  animation: fadeIn 2s ease-in-out;
+}
+
+.btn-primary:hover {
+  background-color: var(--secondary-color-hover);
+}
+
+/* Main Section */
+main {
+  /* padding: 40px 20px; */
+  padding: 0 4rem;
+}
+
+.service-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  /* margin-bottom: 40px; */
+  background: white;
+  padding: 20px;
+  /* border-radius: 10px; */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.service-details .image-container {
+  flex: 1 1 40%;
+  text-align: center;
+}
+
+.service-details .image-container img {
+  max-width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.service-details .content {
+  flex: 1 1 50%;
+  padding: 10px 20px;
+}
+
+.service-details .content h2 {
+  font-size: 1.8rem;
+  color: #FD8A24;
+  margin-bottom: 15px;
+}
+
+.service-details .content p {
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+
+.service-details .content ul {
+  list-style: none;
+  margin-top: 10px;
+}
+
+.service-details .content ul li {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.service-details .content ul li::before {
+  content: "✔";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #FD8A24;
+  font-weight: bold;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  text-decoration: none;
+  background-color: #FD8A24;
+  color: white;
+  font-weight: bold;
+  padding: 10px 20px;
+  border-radius: 5px;
+  margin-top: 20px;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn:hover {
+  background-color: #E5771F;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 20px;
+  background-color: #605F54;
+  color: white;
+  padding: 40px 20px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .service-details {
+    flex-direction: column;
+  }
+
+  .service-details .image-container,
+  .service-details .content {
+    flex: 1 1 100%;
+  }
+
+  header h1 {
+    font-size: 2rem;
+  }
+
+  header p {
+    font-size: 1rem;
+  }
+}
+
+/* Botão Voltar à Página Inicial */
+.back-btn-container {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.btn-back {
+  color: #605F54;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 1.2rem;
+  border: none;
+  background: none;
+  padding: 10px;
+  cursor: pointer;
+  transition: color 0.3s ease-in-out;
+  -webkit-tap-highlight-color: transparent;
+  /* Remove a marca dos botões ao serem tocados em dispositivos Android, iOS */
+}
+
+.btn-back:hover {
+  text-decoration: underline;
+}
+
+/* Logo Marca */
+#logo-marca {
+  text-align: center;
+  margin: 0;
+}
+
+/* Galeria de Imagens */
+.gallery {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  margin: 3rem 0 3rem 0;
+}
+
+.gallery img {
+  width: 30%;
+  max-width: 300px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.5s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.gallery img:hover {
+  transform: scale(1.15);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Ajustes de Responsividade para Galeria */
+@media (max-width: 768px) {
+  .gallery img {
+    width: 45%;
+  }
+
+  main {
+    padding: 40px 20px;
+  }
+
+  #logo-marca {
+    margin: 0 0 3rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .gallery img {
+    width: 100%;
+  }
+}
