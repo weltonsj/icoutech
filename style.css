@@ -60,7 +60,8 @@ body {
 .hero-title,
 .hero-subtitle,
 .hero .btn-primary,
-.hero .nav-container {
+.hero .nav-container,
+header>.container #logo-marca {
   transform: translateY(50px);
   opacity: 0;
   animation: fadeIn 1.5s ease-out forwards;
@@ -76,6 +77,7 @@ body {
 }
 
 .hero-title {
+  padding-top: 2rem;
   animation-delay: 1s;
 }
 
@@ -420,5 +422,9 @@ section {
 @media (max-width: 800px) {
   .contato>.container {
     flex-direction: column;
+  }
+
+  .hero-title {
+    font-size: 3rem;
   }
 }
