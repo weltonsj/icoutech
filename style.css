@@ -1,0 +1,430 @@
+/* Root */
+:root {
+  --primary-color: #FD8A24;
+  --primary-color-hover: #e67e21;
+  --secondary-color: #605F54;
+  --secondary-color-hover: #4f4e4b;
+  --background-color-secondary: #f9f9f9;
+}
+
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* scroll da página suavemente */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--secondary-color);
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Hero Section */
+.hero {
+  background: url('./imagens/banners/2002800-dc-chevron-hero-bg.avif') no-repeat center center/cover;
+  color: white;
+  text-align: center;
+  padding: 100px 20px;
+  height: 100vh;
+}
+
+.hero>.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero>.container .btn-primary {
+  width: 8rem;
+  margin-bottom: 10px;
+}
+
+.hero .nav {
+  color: white;
+  margin-left: 10px;
+}
+
+/* Animação fadeIn - header*/
+.hero-title,
+.hero-subtitle,
+.hero .btn-primary,
+.hero .nav-container,
+header>.container #logo-marca {
+  transform: translateY(50px);
+  opacity: 0;
+  animation: fadeIn 1.5s ease-out forwards;
+}
+
+.hero {
+  opacity: 0;
+  animation: fadeIn 1.5s ease-out forwards;
+}
+
+.hero {
+  animation-delay: 0s;
+}
+
+.hero-title {
+  padding-top: 2rem;
+  animation-delay: 1s;
+}
+
+.hero-subtitle {
+  animation-delay: 1.5s;
+}
+
+.hero .btn-primary {
+  animation-delay: 2s;
+}
+
+.hero .nav-container {
+  animation-delay: 2.5s;
+  margin-top: 2rem;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-title {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.hero-subtitle {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.btn-secondary {
+  display: inline-block;
+  padding: 10px 20px;
+  color: var(--secondary-color);
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+/* Sections */
+section {
+  padding: 50px 20px;
+}
+
+.sobre {
+  background-color: #f9f9f9;
+  text-align: center;
+}
+
+.sobre h2 {
+  font-size: 2rem;
+  margin: 2rem 0 2rem 0;
+  color: var(--primary-color);
+}
+
+.sobre>.container img {
+  margin: 3rem 0 0 0;
+}
+
+/* Missao */
+.missao #missao-img {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.missao>.container p {
+  margin-bottom: 2rem;
+}
+
+.missao {
+  background-color: #f9f9f9;
+}
+
+.missao h2 {
+  font-size: 2rem;
+  color: var(--primary-color);
+}
+
+.missao>.container img {
+  margin: 3rem 0 0 0;
+}
+
+/* iCouTV Section */
+.icoutv {
+  text-align: center;
+}
+
+.icoutv h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.icoutv>.container p {
+  margin-bottom: 1rem;
+}
+
+.icoutv>.container button {
+  border: none;
+  cursor: pointer;
+  padding: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Banner iCouVT */
+.banner-icoutv {
+  padding: 25px;
+  background: url('./imagens/banners/IPTV-banner-1-1-820x400.jpg') no-repeat center center/cover;
+  background-color: #4f4e4b;
+  margin-bottom: 1rem;
+}
+
+.banner-icoutv div {
+  height: 250px;
+  margin: 0;
+}
+
+/* Servicos Section */
+.servicos {
+  text-align: center;
+}
+
+.servicos>.container p:nth-child(1) {
+  margin-bottom: 5rem;
+}
+
+/* Botão Contate-nos */
+.contatenos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-decoration: underline;
+  margin: 1rem 0 0 0;
+}
+
+.contatenos a {
+  font-size: 1.5rem;
+}
+
+.animacao-servicos {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 0 0 3rem 0;
+}
+
+.animacao-servicos a {
+  text-decoration: none;
+  color: white;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.balao {
+  background: var(--secondary-color);
+  color: white;
+  padding: 15px;
+  border-radius: 50%;
+  width: 150px;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1rem;
+  transition: 1s;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Contato Section */
+.contato {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  background-color: #f9f9f9;
+}
+
+.contato>.container {
+  display: flex;
+  gap: 5rem;
+  flex-direction: row-reverse;
+  justify-content: center;
+}
+
+.contato>.container h2 {
+  margin-bottom: 2rem;
+}
+
+.contato img {
+  margin-top: 3rem;
+}
+
+/* Banner Contato */
+.banner-contato {
+  padding: 25px;
+  background: url('./imagens/banners/tecnologia_contact.jpg') no-repeat center center/cover;
+  background-color: #4f4e4b;
+  opacity: 75%;
+}
+
+.banner-contato div {
+  height: 250px;
+  margin: 0;
+}
+
+.formulario {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.formulario label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.formulario input,
+.formulario textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.formulario .btn-primary {
+  border: none;
+  cursor: pointer;
+}
+
+.info-contato ul {
+  list-style: none;
+  margin-top: 15px;
+}
+
+.info-contato ul li {
+  margin-bottom: 10px;
+}
+
+.info-contato ul li a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.info-contato ul li a:hover {
+  text-decoration: underline;
+}
+
+#titulo-fale-conosco {
+  display: flex;
+  gap: 15px;
+}
+
+#titulo-fale-conosco img,
+#titulo-fale-conosco h2 {
+  margin: 0;
+  align-content: center;
+  margin-bottom: 15px;
+}
+
+/* Footer */
+.footer {
+  background: var(--secondary-color);
+  color: white;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.footer p {
+  margin: 0;
+}
+
+/* Mesagem de error do formulário */
+#menssag-error {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: left;
+  gap: 1rem;
+}
+
+.error-label {
+  color: red;
+}
+
+.error {
+  border: 2px solid red;
+  border-radius: 4px;
+}
+
+.message-required {
+  display: none;
+}
+
+.success-message {
+  color: green;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.9em;
+  font-style: italic;
+  margin: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 800px) {
+  .contato>.container {
+    flex-direction: column;
+  }
+
+  .hero-title {
+    font-size: 3rem;
+  }
+}

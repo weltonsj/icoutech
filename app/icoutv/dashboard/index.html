@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    <title>Dashboard iCOUTV</title>
+  </head>
+  <body>
+    <header>
+      <img src="../imagens/Logo Marca Icoutech Branco.svg" alt="iCOUTech Logo">
+    </header>
+    <main class="container">
+      <!-- Informações da Conta -->
+      <section class="section" id="account-info">
+        <h2>Informações da Conta</h2>
+        <ul>
+          <li><strong>Nome do Cliente:</strong> Welton Silva</li>
+          <li><strong>Status da Conta:</strong> Ativa</li>
+          <li><strong>Data de Expiração do Serviço:</strong> 30/12/2024</li>
+          <li><strong>Método de Pagamento:</strong> Cartão de Crédito</li>
+        </ul>
+      </section>
+
+      <!-- Informações do Serviço -->
+      <section class="section" id="service-info">
+        <h2>Informações do Serviço</h2>
+        <ul>
+          <li><strong>Tipo de Plano Contratado:</strong> Premium</li>
+          <li><strong>Servidor em Uso:</strong> Servidor #1</li>
+        </ul>
+      </section>
+
+      <!-- Suporte Técnico -->
+      <section class="section" id="support">
+        <h2>Suporte Técnico</h2>
+        <button class="button" onclick="window.location.href='central-solucoes.html'">Central de Soluções</button>
+        <button class="button" onclick="window.location.href='suporte-rapido.html'">Suporte Rápido</button>
+      </section>
+
+      <!-- Configurações -->
+      <section class="section" id="settings">
+        <h2>Configurações</h2>
+        <ul>
+          <li><strong>Gerenciamento de Contas:</strong> Usuário e Senha</li>
+          <li><button class="button" onclick="resetPassword()">Redefinir Senha</button></li>
+          <li><button class="button" onclick="downloadApps()">Download de Apps</button></li>
+          <li><strong>Gerenciamento de Dispositivos:</strong></li>
+          <ul>
+            <li>Nome: Smart TV, Tipo: Android, MAC: 00:1A:2B:3C:4D:5E</li>
+          </ul>
+        </ul>
+      </section>
+
+      <!-- Área de Pagamentos -->
+      <section class="section" id="payments">
+        <h2>Área de Pagamentos</h2>
+        <ul>
+          <li><strong>Histórico de Pagamentos:</strong> 29/11/2024 - R$ 49,90</li>
+          <li><strong>Próxima Fatura:</strong> 30/12/2024 - R$ 49,90</li>
+          <li><button class="button" onclick="generatePayment()">Emitir Boleto/QR Code</button></li>
+        </ul>
+      </section>
+
+      <!-- Promoções e Ofertas -->
+      <section class="section" id="promotions">
+        <h2>Promoções e Ofertas</h2>
+        <ul>
+          <li><strong>Indique e Ganhe:</strong> 1 mês grátis por indicação!</li>
+          <li><strong>Descontos e Planos:</strong> Upgrade para Plano Plus com 20% OFF</li>
+        </ul>
+      </section>
+
+      <!-- Informações Técnicas -->
+      <section class="section" id="technical-info">
+        <h2>Informações Técnicas</h2>
+        <ul>
+          <li><strong>Velocidade de Internet Requerida:</strong> 10 Mbps</li>
+          <li><strong>Versão do App:</strong> v1.0.5</li>
+        </ul>
+      </section>
+
+      <!-- Feedback -->
+      <section class="section" id="feedback">
+        <h2>Feedback</h2>
+        <button class="button" onclick="giveFeedback()">Avaliar o Serviço</button>
+        <button class="button" onclick="survey()">Responder Enquete</button>
+      </section>
+    </main>
+
+    <footer>
+      <button id="exit" class="button" onclick="logout()">Sair</button>
+      <p>&copy; 2024 iCoutech. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
