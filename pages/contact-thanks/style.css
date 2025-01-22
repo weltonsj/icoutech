@@ -1,0 +1,75 @@
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Corpo da página */
+body {
+  font-family: 'Arial', sans-serif;
+  background: #F4F4F4;
+  color: #605F54;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  margin: 0;
+}
+
+/* Container principal */
+.thank-you-container {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Conteúdo */
+.thank-you-content h1 {
+  color: #FD8A24;
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+.thank-you-content p {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.thank-you-content .btn {
+  display: inline-block;
+  background: #FD8A24;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.thank-you-content .btn:hover {
+  background: #d46f1d;
+}
+
+/* Responsividade */
+@media (max-width: 600px) {
+  .thank-you-content h1 {
+    font-size: 2rem;
+  }
+
+  .thank-you-content p {
+    font-size: 1rem;
+  }
+
+  .thank-you-content .btn {
+    font-size: 0.9rem;
+    padding: 10px 15px;
+  }
+}
