@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Cadastro - iCoutech</title>
+    <link rel="shortcut icon" href="../../imagens/icones/ic_Logo_466x620.png" type="image/x-icon">
+    <link rel="stylesheet" href="./index.css">
+    <link rel="stylesheet" href="../../animacoes/loadingOverlay.css">
+  </head>
+  <body>
+    <!-- <div id="loading">
+      <div class="spinner"></div>
+      <p id="pleaseWait">Por favor, aguarde...</p>
+      <div id="responseMessage" class="success-message" style="display: none;">Formulário enviado com sucesso!</div>
+      <div id="errorMessage" class="error-message" style="display: none;">Ocorreu um erro. Tente novamente.</div>
+    </div> -->
+    <header>
+      <img src="./imagens/Logo Marca Icoutech.svg" alt="Logo Marca iCoutech">
+    </header>
+    <div class="container">
+      <form id="icoutechForm">
+        <!-- Página 1 -->
+        <div class="form-section active" id="page-1">
+          <h1>Formulário de Cadastro - iCoutech | Política de Segurança</h1>
+          <section class="securityPolicy">
+            <h2>1.Introdução</h2>
+            <p>
+              Esta Política de Segurança tem como objetivo estabelecer diretrizes para garantir a segurança e a proteção
+              das informações dos novos clientes ao realizarem o cadastro no aplicativo de IPTV iCoutech. A iCoutech
+              compromete-se a proteger a privacidade e a segurança dos dados pessoais de seus clientes, conforme as leis
+              e regulamentações aplicáveis.
+            </p>
+            <h2>2. Coleta de Informações</h2>
+            <h3>2.1. Informações Coletadas</h3>
+            <p>Durante o processo de cadastro, serão coletadas as seguintes informações pessoais:</p>
+            <ul>
+              <li>Nome completo</li>
+              <li>Endereço de e-mail </li>
+              <li>Número de telefone</li>
+              <li>Endereço residencial</li>
+            </ul>
+            <h3>2.2. Finalidade da Coleta</h3>
+            <p>As informações coletadas serão utilizadas exclusivamente para os seguintes fins:</p>
+            <ul>
+              <li>Criação e manutenção da conta do cliente</li>
+              <li>Processamento de pagamentos</li>
+              <li>Comunicação com o cliente sobre o serviço de IPTV</li>
+              <li>Envio de atualizações e informações relevantes sobre o serviço</li>
+            </ul>
+            <h2>3. Proteção e Segurança dos Dados </h2>
+            <h3>3.1. Criptografia</h3>
+            <p>Todas as informações pessoais coletadas serão criptografadas durante a transmissão e o armazenamento,
+              utilizando protocolos de segurança avançados.</p>
+            <h3>3.2. Acesso Restrito</h3>
+            <p>O acesso às informações pessoais dos clientes será restrito apenas a funcionários autorizados que
+              necessitem dessas informações para desempenhar suas funções. Todos os funcionários terão a obrigação de
+              manter a confidencialidade dos dados.</p>
+            <h3>3.3. Monitoramento e Auditoria</h3>
+            <p>Serão realizados monitoramentos e auditorias regulares para garantir a conformidade com esta política de
+              segurança e para identificar e corrigir possíveis vulnerabilidades.</p>
+            <h2>4. Direitos dos Clientes</h2>
+            <h3>4.1. Acesso e Correção de Dados</h3>
+            <p>Os clientes têm o direito de acessar, corrigir ou atualizar suas informações pessoais a qualquer momento,
+              através do painel de controle do aplicativo ou entrando em contato com o suporte ao cliente.</p>
+            <h3>4.2. Exclusão de Dados</h3>
+            <p>Os clientes podem solicitar a exclusão de suas informações pessoais, desde que não haja obrigatoriedade
+              legal para a retenção desses dados. A exclusão será efetuada no prazo de 30 dias após a solicitação.</p>
+            <h2>5. Consentimento e Transparência</h2>
+            <h3>5.1. Consentimento do Cliente</h3>
+            <p>Durante o processo de cadastro, será solicitado o consentimento expresso do cliente para a coleta e
+              utilização de suas informações pessoais conforme descrito nesta política. </p>
+            <h3>5.2. Transparência</h3>
+            <p>A iCoutech compromete-se a informar os clientes sobre qualquer alteração significativa nesta política de
+              segurança, garantindo a transparência nas práticas de proteção de dados.</p>
+            <h2>6. Responsabilidades e Penalidades</h2>
+            <h3>6.1. Responsabilidades da iCoutech</h3>
+            <p>A iCoutech é responsável por implementar e manter as medidas de segurança descritas nesta política,
+              garantindo a proteção dos dados pessoais dos clientes.</p>
+            <h3>6.2. Penalidades</h3>
+            <p>Qualquer funcionário que violar esta política de segurança estará sujeito a medidas disciplinares, que
+              podem incluir advertências, suspensão ou demissão, conforme a gravidade da violação.</p>
+            <h2>7. Contato </h2>
+            <p>Para quaisquer dúvidas, reclamações ou solicitações relacionadas a esta política de segurança, os
+              clientes podem entrar em contato com o suporte ao cliente da iCoutech através do e-mail:
+              <strong>suporte@icoutech.com</strong> ou pelo telefone: <strong>(71) 98394-2172</strong>.
+            </p>
+            <h2>8. Revisão e Atualização</h2>
+            <p>Esta política de segurança será revisada e atualizada regularmente para garantir a conformidade com as
+              leis e regulamentações aplicáveis e para melhorar continuamente as práticas de segurança da iCoutech.</p>
+            <p><i><strong>Data de Vigência:</strong> 01/07/2024</i></p>
+            <br>
+            <p>
+              Leia nossa <a href="https://drive.google.com/file/d/1lzPLv0R9Iuj7c6FZjFSuK3k4OI7EerUF/view?usp=sharing"
+                target="_blank" style="color: #FB8A26;">Política de Segurança</a> antes de prosseguir com o
+              preenchimento
+              do formulário.
+            </p>
+            <div id="policy-Checkbox">
+              <label for="policyCheckbox"><strong><i>Confirmo que li a Política de Segurança</i></strong></label>
+              <input type="checkbox" id="policyCheckbox">
+            </div>
+          </section>
+        </div>
+
+        <!-- Página 2 -->
+        <div class="form-section" id="page-2">
+          <h2>Dados do Cliente</h2>
+          <label for="cpfcnpj">CPF/CNPJ</label>
+          <p class="cpfcnpj message-required error-message">Este campo é obrigatório</p>
+          <input type="text" class="requiredFields" id="cpfcnpj" name="cpfcnpj" maxlength="18" required>
+
+          <label for="nome">Nome</label>
+          <p class="nome message-required error-message">Este campo é obrigatório</p>
+          <input type="text" class="requiredFields" id="nome" name="nome" required>
+
+          <label for="sobrenome">Sobrenome</label>
+          <p class="sobrenome message-required error-message">Este campo é obrigatório</p>
+          <input type="text" class="requiredFields" id="sobrenome" name="sobrenome" required>
+
+          <label for="email">E-mail</label>
+          <p class="email message-required error-message">Este campo é obrigatório</p>
+          <input type="email" class="requiredFields" id="email" name="email" required>
+
+          <label for="telefone">Telefone</label>
+          <p class="telefone message-required error-message">Este campo é obrigatório</p>
+          <input type="tel" class="requiredFields" id="telefone" name="telefone" maxlength="15" required>
+
+          <label for="endereco">Endereço</label>
+          <p class="endereco message-required error-message">Este campo é obrigatório</p>
+          <input type="text" class="requiredFields" id="endereco" name="endereco" required>
+
+          <label for="cep">CEP</label>
+          <p class="cep message-required error-message">Este campo é obrigatório</p>
+          <input type="text" class="requiredFields" id="cep" name="cep" maxlength="9" required>
+
+          <label for="numero">Número</label>
+          <input type="number" class="requiredFields" id="numero" name="numero">
+
+          <label for="complemento">Complemento</label>
+          <input type="text" class="requiredFields" id="complemento" name="complemento">
+
+          <label for="bairro">Bairro</label>
+          <input type="text" class="requiredFields" id="bairro" name="bairro">
+
+          <label for="cidade">Cidade</label>
+          <p class="cidade message-required error-message">Este campo é obrigatório</p>
+          <input type="text" class="requiredFields" id="cidade" name="cidade" required>
+
+          <label for="estado">Estado</label>
+          <p class="estado message-required error-message">Este campo é obrigatório</p>
+          <select class="requiredFields" id="estado" name="estado" required>
+            <option value="">Selecione...</option>
+            <option value="AC">Acre</option>
+            <option value="AL">Alagoas</option>
+            <option value="AP">Amapá</option>
+            <option value="AM">Amazonas</option>
+            <option value="BA">Bahia</option>
+            <option value="CE">Ceará</option>
+            <option value="DF">Distrito Federal</option>
+            <option value="ES">Espírito Santo</option>
+            <option value="GO">Goiás</option>
+            <option value="MA">Maranhão</option>
+            <option value="MT">Mato Grosso</option>
+            <option value="MS">Mato Grosso do Sul</option>
+            <option value="MG">Minas Gerais</option>
+            <option value="PA">Pará</option>
+            <option value="PB">Paraíba</option>
+            <option value="PR">Paraná</option>
+            <option value="PE">Pernambuco</option>
+            <option value="PI">Piauí</option>
+            <option value="RJ">Rio de Janeiro</option>
+            <option value="RN">Rio Grande do Norte</option>
+            <option value="RS">Rio Grande do Sul</option>
+            <option value="RO">Rondônia</option>
+            <option value="RR">Roraima</option>
+            <option value="SC">Santa Catarina</option>
+            <option value="SP">São Paulo</option>
+            <option value="SE">Sergipe</option>
+            <option value="TO">Tocantins</option>
+          </select>
+        </div>
+
+        <!-- Página 3 -->
+        <div class="form-section" id="page-3">
+          <h2>Consentimento</h2>
+          <p class="consent-text">
+            Caro cliente, para criar sua conta e fornecer acesso aos serviços do aplicativo de IPTV iCoutech, precisamos
+            coletar e usar algumas informações pessoais, incluindo nome completo, endereço de e-mail, número de
+            telefone, endereço residencial e informações de pagamento. Essas informações serão utilizadas exclusivamente
+            para a criação e manutenção da sua conta, processamento de pagamentos e comunicação sobre o serviço.
+          </p>
+          <p>
+            Você consente com a coleta e uso dos seus dados pessoais conforme descrito na <a
+              href="https://encurtador.com.br/tkUzj" target="_blank" style="color: #FB8A26;">Política de Segurança</a>?
+          </p>
+          <div id="form-section-consent-box">
+            <div class="form-section-consent">
+              <label for="consent-sim"><strong>Sim, eu consinto</strong></label>
+              <input type="radio" id="consent-sim" name="consent" value="sim" required>
+            </div>
+            <div class="form-section-consent">
+              <label for="consent-nao"><strong>Não, eu não consinto</strong></label>
+              <input type="radio" id="consent-nao" name="consent" value="nao" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navegação -->
+        <div class="form-navigation">
+          <button type="button" id="prevButton">Anterior</button>
+          <button type="button" id="nextButton">Próximo</button>
+          <input type="submit" value="Enviar" id="submitButton" style="display: none;">
+        </div>
+      </form>
+    </div>
+
+    <!-- Animação de Carregamento -->
+    <div id="loadingOverlay">
+      <div id="loading">
+        <p id="pleaseWait">Por favor, aguarde...</p>
+        <div id="responseMessage" class="success-message" >Formulário enviado com sucesso!</div>
+        <div id="errorMessage" class="error-message" >Ocorreu um erro. Tente novamente.</div>
+      </div>
+      <div class="spinner">
+        <div class="circle outer"></div>
+        <div class="circle inner"></div>
+      </div>
+    </div>
+
+    <script type="module" src="./index.js"></script>
+    <script type="module" src="../../animacoes/loadingOverlay.js"></script>
+  </body>
+</html>

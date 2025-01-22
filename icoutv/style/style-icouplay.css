@@ -1,0 +1,383 @@
+/* Reset Básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  color: #605F54;
+  background-color: black;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Cabeçalho */
+.icoutv-header {
+  background: url('../imagens/backgrounds/background-preto-laranja.jpg') no-repeat center center/cover;
+  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.icoutv-header .container {
+  height: 100vh;
+}
+
+.icoutv-header .logo {
+  width: 5.5rem;
+}
+
+.icoutv-nav {
+  padding-top: 1rem;
+}
+
+.icoutv-nav ul {
+  display: flex;
+  list-style: none;
+  gap: 20px;
+}
+
+.icoutv-nav li {
+  padding-bottom: 10px;
+}
+
+.icoutv-nav li::marker {
+  color: #E5771F;
+}
+
+.icoutv-nav a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.icoutv-nav a:hover {
+  color: #ffe0b5;
+}
+
+/* Animação da Logo */
+.icoutv-header>.container .logo {
+  animation: move-down 3s ease-in forwards;
+}
+
+@keyframes move-down {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Animação do nav */
+.icoutv-nav li:nth-child(1),
+.icoutv-nav li:nth-child(2),
+.icoutv-nav li:nth-child(3),
+.icoutv-nav li:nth-child(4) {
+  transform: translateX(-50px);
+  list-style: none;
+  opacity: 0;
+  transition: 1s;
+  animation: up-flip 1.5s ease-out forwards;
+}
+
+a[href="#video"],
+a[href="#content"],
+a[href="#streamings"],
+a[href="#channels"] {
+  transition: 1s;
+  opacity: 0;
+  animation: up-flip 1.5s ease-out forwards;
+}
+
+.icoutv-nav li:nth-child(1) {
+  animation-delay: 0.5s;
+}
+
+.icoutv-nav li:nth-child(2) {
+  animation-delay: 1s;
+}
+
+.icoutv-nav li:nth-child(3) {
+  animation-delay: 1.5s;
+}
+
+.icoutv-nav li:nth-child(4) {
+  animation-delay: 2s;
+}
+
+@keyframes up-flip {
+  to {
+    transform: translateX(0);
+    list-style: disc;
+    opacity: 1;
+  }
+}
+
+/* Animação do Hero */
+.hero h1,
+.hero p,
+.hero-buttons {
+  transition: 1s;
+  opacity: 0;
+  animation: whisper 1.5s ease-in-out forwards;
+}
+
+.hero h1 {
+  animation-delay: 2s;
+}
+
+.hero p {
+  animation-delay: 2.5s;
+}
+
+.hero-buttons {
+  animation-delay: 3s;
+}
+
+@keyframes whisper {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Hero e Header */
+.hero {
+  text-align: center;
+  color: white;
+  padding: 40px 20px;
+}
+
+.hero-buttons {
+  margin-top: 20px;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+}
+
+.hero-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 15px 30px;
+  font-size: 1rem;
+  text-decoration: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary {
+  background-color: white;
+  color: #FD8A24;
+  border: 2px solid white;
+  transition: all 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #FFE0B5;
+  color: #E5771F;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: white;
+  border: 2px solid white;
+  transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+  background-color: white;
+  color: #FD8A24;
+}
+
+/* Vídeo */
+.video-section {
+  text-align: center;
+  /* background-color: #fff; */
+}
+
+.video-section h2 {
+  color: #FD8A24;
+  padding: 50px 0 20px 0;
+}
+
+.video-section p {
+  color: #fff;
+  font-weight: 500;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.video-section video {
+  max-width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+}
+
+.video-container {
+  display: flex;
+  justify-content: center;
+  padding: 50px 0px;
+}
+
+.video-container video {
+  width: 100%;
+  max-width: 1048px;
+  height: 646px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Lançamentos */
+.content-section {
+  padding: 50px 20px;
+  text-align: center;
+}
+
+.content-section h2 {
+  font-size: 2rem;
+  padding: 30px 0 60px 0;
+  color: #fff;
+}
+
+/* Gallery */
+.gallery {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 50px;
+}
+
+.gallery-item {
+  flex: 1 1 300px;
+  max-width: 300px;
+  text-align: center;
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 450px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.gallery-item p {
+  padding: 15px 0 0 0;
+  color: white;
+}
+
+/* Streamings */
+.streamings-section {
+  background-color: #fff;
+  padding: 100px 20px;
+  text-align: center;
+}
+
+.streamings-section h2 {
+  padding-bottom: 20px;
+}
+
+.streamings-section p {
+  color: #E5771F;
+  padding-bottom: 40px;
+  font-weight: 500;
+}
+
+.streamings-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+.streamings-grid img {
+  width: 120px;
+  box-shadow: 2px 3px 5px 1px #605F54;
+}
+
+/* Canais */
+.channels-section {
+  padding: 20px;
+  text-align: center;
+}
+
+.channels-section h2 {
+  padding: 20px 0;
+  color: #fff;
+}
+
+.channel-list {
+  list-style: none;
+  padding: 20px 0 20px 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.channel-list li {
+  background: #fff;
+  padding: 10px 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-weight: bold;
+}
+
+/* Rodapé */
+footer {
+  background-color: black;
+  color: white;
+  text-align: center;
+  padding: 50px 0;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+
+  .btn-primary,
+  .btn-secondary {
+    font-size: 0.99rem;
+  }
+
+  .gallery-item {
+    flex: 1 1 100%;
+  }
+
+  .video-container video {
+    height: 250px;
+  }
+}

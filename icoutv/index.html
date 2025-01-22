@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Acesse o iCouTV e desfrute dos melhores conteúdos de Filmes, Séries e Canais.">
+    <title>iCouTV - Sua Experiência de Entretenimento</title>
+    <link rel="shortcut icon" href="../imagens/icones/ic_Logo_466x620.png" type="image/x-icon">
+    <link rel="stylesheet" href="./style/style-icouplay.css">
+    <link rel="stylesheet" href="./style/style-icouplay-carousel.css">
+    <link rel="stylesheet" href="../animacoes/loadingOverlay.css">
+  </head>
+  <body>
+    <!-- Cabeçalho e Hero combinados -->
+    <header id="icoutv-header" class="icoutv-header">
+      <div class="container">
+        <img src="../imagens/logo/Logo Marca Icoutech.svg" alt="Logo iCoutech" class="logo">
+        <nav>
+          <ul class="icoutv-nav">
+            <li><a href="#video">Apresentação</a></li>
+            <li><a href="#content">Filmes e Séries</a></li>
+            <li><a href="#streamings">Streamings</a></li>
+            <li><a href="#channels">Canais</a></li>
+          </ul>
+        </nav>
+
+        <section class="hero">
+          <h1>Bem-vindo ao iCouTV</h1>
+          <p>Seu portal para os melhores conteúdos de filmes, séries e canais exclusivos.</p>
+          <div class="hero-buttons">
+            <button id="btn-client" class="btn-primary">Sou Cliente</button>
+            <button id="btn-subscribe" class="btn-secondary">Quero Assinar</button>
+            <a href=""></a>
+          </div>
+        </section>
+      </div>
+    </header>
+
+    <!-- Lançamentos de Filmes e Séries -->
+    <main>
+      <!-- Vídeo de apresentação -->
+      <section id="video" class="video-section">
+        <h2>Apresentação do iCouTV</h2>
+        <p>Assista aos seus canais favoritos, séries, filmes e esportes ao vivo em alta qualidade, onde e quando quiser.
+          Com o iCouTV, você tem acesso a um catálogo completo e atualizado, suporte confiável e a melhor tecnologia de
+          streaming. Experimente o futuro da TV hoje mesmo!</p>
+        <div class="video-container">
+          <video controls muted autoplay loop>
+            <source src="./videos/apresentacao_final_compress.mp4" type="video/mp4">
+            Seu navegador não suporta a reprodução de vídeo.
+          </video>
+        </div>
+      </section>
+
+      <!-- Filmes e Séries -->
+      <section id="content" class="content-section">
+        <h2>Lançamentos</h2>
+        <div class="gallery">
+          <div class="gallery-item">
+            <img src="./imagens/capa-filmes/gladiador2.webp" alt="Filme 1">
+            <p>Gladiador 2</p>
+          </div>
+          <div class="gallery-item">
+            <img src="./imagens/capa-filmes/apocalipseZ.webp" alt="Série 1">
+            <p>Apocalipse Z</p>
+          </div>
+          <div class="gallery-item">
+            <img src="./imagens/capa-filmes/venom.webp" alt="Filme 2">
+            <p>Venom - A última rodada</p>
+          </div>
+          <div class="gallery-item">
+            <img src="./imagens/capa-series/arcanjo_renegado_3.webp" alt="Filme 2">
+            <p>Arcanjo Renegado - 3 Temporada</p>
+          </div>
+          <div class="gallery-item">
+            <img src="./imagens/capa-series/quando-o-telefone-toca-tem-1.webp" alt="Filme 2">
+            <p>Quando o telefone toca - 1 Temporada</p>
+          </div>
+          <div class="gallery-item">
+            <img src="./imagens/capa-series/roun6-temp-2.webp" alt="Filme 2">
+            <p>Round 6 - 2 Temporada</p>
+          </div>
+        </div>
+
+        <!-- Carrossel para telas menores -->
+        <div class="carousel">
+          <div class="carousel-container">
+            <div class="carousel-slide">
+              <img src="./imagens/capa-filmes/gladiador2.webp" alt="Filme 1">
+              <p>Gladiador 2</p>
+            </div>
+            <div class="carousel-slide">
+              <img src="./imagens/capa-filmes/apocalipseZ.webp" alt="Série 1">
+              <p>Apocalipse Z</p>
+            </div>
+            <div class="carousel-slide">
+              <img src="./imagens/capa-filmes/venom.webp" alt="Filme 2">
+              <p>Venom - A última rodada</p>
+            </div>
+            <div class="carousel-slide">
+              <img src="./imagens/capa-series/arcanjo_renegado_3.webp" alt="Filme 2">
+              <p>Arcanjo Renegado - 3 Temporada</p>
+            </div>
+            <div class="carousel-slide">
+              <img src="./imagens/capa-series/quando-o-telefone-toca-tem-1.webp" alt="Filme 2">
+              <p>Quando o telefone toca - 1 Temporada</p>
+            </div>
+            <div class="carousel-slide">
+              <img src="./imagens/capa-series/roun6-temp-2.webp" alt="Filme 2">
+              <p>Round 6 - 2 Temporada</p>
+            </div>
+          </div>
+          <button class="carousel-prev">&lt;</button>
+          <button class="carousel-next">&gt;</button>
+        </div>
+      </section>
+
+      <!-- Streamings disponíveis -->
+      <section id="streamings" class="streamings-section">
+        <h2>Streamings Disponíveis</h2>
+        <p>Acesse as melhores plataformas de streaming direto no iCouTV! Filmes, séries, esportes e muito mais, com
+          total praticidade e qualidade. Sua diversão começa aqui!</p>
+        <div class="streamings-grid">
+          <img src="./imagens/logos/netflix.jpg" alt="Netflix">
+          <img src="./imagens/logos/globoplay.webp" alt="Globo Play">
+          <img src="./imagens/logos/disney.webp" alt="Disney Plus">
+          <img src="./imagens/logos/prime_video.jpg" alt="Prime Video">
+          <img src="./imagens/logos/HBO-Max.webp" alt="HBO">
+          <img src="./imagens/logos/star.jpg" alt="Star Plus">
+          <img src="./imagens/logos/loke.png" alt="">
+          <img src="./imagens/logos/apple-tv.png" alt="">
+          <img src="./imagens/logos/crunchyroll.avif" alt="">
+          <img src="./imagens/logos/MUBI.webp" alt="">
+          <img src="./imagens/logos/paramount.png" alt="">
+          <img src="./imagens/logos/tele_cine.jpg" alt="">
+
+        </div>
+      </section>
+
+      <!-- Canais disponíveis -->
+      <section id="channels" class="channels-section">
+        <h2>Canais Disponíveis</h2>
+        <ul class="channel-list">
+          <li title="Globo">Globo</li>
+          <li>SBT</li>
+          <li>Record</li>
+          <li>Band</li>
+          <li>RedeTV!</li>
+          <li>GloboNews</li>
+          <li>BandNews</li>
+          <li>ESPN</li>
+          <li>Fox Sports</li>
+          <li>Sportv</li>
+          <li>Discovery Channel</li>
+          <li>National Geographic</li>
+          <li>History Channel</li>
+          <li>HBO</li>
+          <li>Telecine</li>
+          <li>Universal Channel</li>
+          <li>Warner Channel</li>
+          <li>Disney Channel</li>
+          <li>Nickelodeon</li>
+          <li>Cartoon Network</li>
+        </ul>
+        <div class="hero-buttons">
+          <a href="#icoutv-header" class="btn-secondary">Assine Já</a>
+        </div>
+      </section>
+    </main>
+
+    <!-- Animação de Carregamento -->
+    <div id="loadingOverlay">
+      <div class="spinner">
+        <div class="circle outer"></div>
+        <div class="circle inner"></div>
+      </div>
+    </div>
+
+    <!-- Rodapé -->
+    <footer>
+      <div class="container">
+        <p>&copy; 2025 iCoutech - Todos os direitos reservados.</p>
+      </div>
+    </footer>
+
+    <script type="module" src="./script/script-icouplay.js"></script>
+    <script type="module" src="./script/script-icouplay-carousel.js"></script>
+    <script type="module" src="../animacoes/loadingOverlay.js"></script>
+  </body>
+</html>

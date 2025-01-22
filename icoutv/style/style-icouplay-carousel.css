@@ -1,0 +1,75 @@
+/* Ocultar o carrossel em telas grandes */
+.carousel {
+  display: none;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Tornar o carrossel visível em telas menores */
+@media (max-width: 768px) {
+  .gallery {
+    display: none;
+  }
+
+  .carousel {
+    display: block;
+  }
+}
+
+/* Estilos gerais do carrossel */
+.carousel-container {
+  display: flex;
+  transition: transform 0.4s ease-in-out;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  text-align: center;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.carousel-slide p {
+  margin-top: 10px;
+  font-weight: bold;
+  color: white;
+}
+
+.carousel-prev,
+.carousel-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.carousel-prev {
+  left: 10px;
+}
+
+.carousel-next {
+  right: 10px;
+}
+
+.carousel-prev:hover,
+.carousel-next:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
