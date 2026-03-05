@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="icouTv - Painel de Gerenciamento">
+    <meta name="theme-color" content="#605F54">
+    <title>icouTv - Painel Admin</title>
+
+    <!-- Fonte Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3e%3ctext y='.9em' font-size='90'%3e📺%3c/text%3e%3c/svg%3e">
+</head>
+<body>
+
+    <!-- Estado de Carregamento -->
+    <div id="carregando" class="carregando-pagina">
+        <div class="spinner spinner-primario" style="width:40px;height:40px;"></div>
+        <p>Verificando acesso...</p>
+    </div>
+
+    <!-- Acesso Negado -->
+    <div id="acesso-negado" class="carregando-pagina" style="display:none;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-erro)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+        </svg>
+        <p style="color:var(--cor-erro);font-weight:600;">Acesso negado</p>
+        <p style="font-size:var(--fonte-tamanho-sm);">Você não tem permissão para acessar esta área.</p>
+        <a href="index.html" class="btn btn-primario" style="margin-top:1rem;text-decoration:none;">Voltar ao Login</a>
+    </div>
+
+    <!-- Conteúdo Admin (oculto até validar) -->
+    <div id="admin-app" style="display:none;">
+
+        <!-- Cabeçalho Admin -->
+        <header class="admin-header">
+            <h1>Painel Admin</h1>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span style="font-size:var(--fonte-tamanho-xs);opacity:0.8;" id="admin-email"></span>
+                <button id="btn-logout" class="btn-logout" style="position:static;">Sair</button>
+            </div>
+        </header>
+
+        <div class="admin-container">
+
+            <!-- Seção: Cadastrar/Gerenciar Fatura -->
+            <section class="admin-section">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" x2="12" y1="18" y2="12"></line>
+                        <line x1="9" x2="15" y1="15" y2="15"></line>
+                    </svg>
+                    Nova Fatura
+                </h2>
+
+                <div class="card">
+                    <form id="form-fatura" novalidate>
+                        <!-- Buscar Cliente por E-mail -->
+                        <div class="form-grupo">
+                            <label class="form-label" for="cliente-email">E-mail do Cliente</label>
+                            <div style="display:flex;gap:0.5rem;">
+                                <input
+                                    type="email"
+                                    id="cliente-email"
+                                    class="form-input"
+                                    placeholder="cliente@email.com"
+                                    required
+                                >
+                                <button type="button" id="btn-buscar-cliente" class="btn btn-secundario btn-sm" style="white-space:nowrap;">
+                                    Buscar
+                                </button>
+                            </div>
+                            <div id="cliente-info" style="display:none;margin-top:0.5rem;padding:0.5rem;background:var(--cor-sucesso-fundo);border-radius:var(--borda-raio-sm);font-size:var(--fonte-tamanho-sm);color:#166534;">
+                                <strong id="cliente-nome-encontrado"></strong>
+                                <span id="cliente-uid" style="display:none;"></span>
+                            </div>
+                            <div id="cliente-nao-encontrado" style="display:none;margin-top:0.5rem;padding:0.5rem;background:var(--cor-erro-fundo);border-radius:var(--borda-raio-sm);font-size:var(--fonte-tamanho-sm);color:#991b1b;">
+                                Cliente não encontrado.
+                            </div>
+                        </div>
+
+                        <!-- Mês de Referência -->
+                        <div class="form-grupo">
+                            <label class="form-label" for="mes-ref">Mês de Referência</label>
+                            <input
+                                type="text"
+                                id="mes-ref"
+                                class="form-input"
+                                placeholder="03/2026"
+                                required
+                            >
+                        </div>
+
+                        <!-- Data de Vencimento -->
+                        <div class="form-grupo">
+                            <label class="form-label" for="data-vencimento">Data de Vencimento</label>
+                            <input
+                                type="date"
+                                id="data-vencimento"
+                                class="form-input"
+                                required
+                            >
+                        </div>
+
+                        <!-- Upload PDF -->
+                        <div class="form-grupo">
+                            <label class="form-label">Fatura em PDF</label>
+                            <div class="upload-area" id="upload-area">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" x2="12" y1="3" y2="15"></line>
+                                </svg>
+                                <p>Clique ou arraste o PDF aqui</p>
+                                <p class="nome-arquivo" id="nome-arquivo" style="display:none;"></p>
+                            </div>
+                            <input type="file" id="input-pdf" accept=".pdf" style="display:none;">
+                        </div>
+
+                        <!-- OU inserir URL manualmente -->
+                        <div class="form-grupo">
+                            <label class="form-label" for="url-pdf-manual">Ou cole a URL do PDF (Cloudinary)</label>
+                            <input
+                                type="url"
+                                id="url-pdf-manual"
+                                class="form-input"
+                                placeholder="https://res.cloudinary.com/..."
+                            >
+                        </div>
+
+                        <!-- Código PIX -->
+                        <div class="form-grupo">
+                            <label class="form-label" for="codigo-pix-input">Código PIX Copia e Cola</label>
+                            <textarea
+                                id="codigo-pix-input"
+                                class="form-input"
+                                placeholder="Cole aqui o código PIX completo..."
+                                rows="4"
+                                required
+                            ></textarea>
+                        </div>
+
+                        <!-- Status do Pagamento -->
+                        <div class="form-grupo">
+                            <label class="form-label" for="status-pagamento">Status do Pagamento</label>
+                            <select id="status-pagamento" class="form-input">
+                                <option value="pendente" selected>Pendente</option>
+                                <option value="pago">Pago</option>
+                            </select>
+                        </div>
+
+                        <!-- Botão Salvar -->
+                        <button type="submit" class="btn btn-primario btn-bloco" id="btn-salvar-fatura">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
+                            <span id="btn-salvar-texto">Salvar Fatura</span>
+                            <div class="spinner" id="btn-salvar-spinner" style="display:none;"></div>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Seção: Cadastrar Novo Cliente -->
+            <section class="admin-section">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <line x1="19" x2="19" y1="8" y2="14"></line>
+                        <line x1="22" x2="16" y1="11" y2="11"></line>
+                    </svg>
+                    Cadastrar Cliente
+                </h2>
+
+                <div class="card">
+                    <form id="form-cliente" novalidate>
+                        <div class="form-grupo">
+                            <label class="form-label" for="novo-nome">Nome Completo</label>
+                            <input type="text" id="novo-nome" class="form-input" placeholder="Nome do cliente" required>
+                        </div>
+                        <div class="form-grupo">
+                            <label class="form-label" for="novo-email">E-mail</label>
+                            <input type="email" id="novo-email" class="form-input" placeholder="email@cliente.com" required>
+                        </div>
+
+                        <div class="form-grupo">
+                            <label class="form-label" for="novo-status">Status da Conta</label>
+                            <select id="novo-status" class="form-input">
+                                <option value="ativa" selected>Ativa</option>
+                                <option value="inativa">Inativa</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primario btn-bloco" id="btn-cadastrar-cliente">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <line x1="19" x2="19" y1="8" y2="14"></line>
+                                <line x1="22" x2="16" y1="11" y2="11"></line>
+                            </svg>
+                            <span id="btn-cadastrar-texto">Cadastrar Cliente</span>
+                            <div class="spinner" id="btn-cadastrar-spinner" style="display:none;"></div>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Seção: Lista de Clientes -->
+            <section class="admin-section">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Clientes Cadastrados
+                </h2>
+
+                <div class="card" style="overflow-x:auto;">
+                    <div id="lista-clientes-vazia" class="sem-dados">
+                        <p>Carregando clientes...</p>
+                    </div>
+                    <table class="tabela-clientes" id="tabela-clientes" style="display:none;">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>E-mail</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-clientes-body">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Seção: Mensagens Personalizadas -->
+            <section class="admin-section">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Mensagens Personalizadas
+                </h2>
+
+                <div class="card">
+                    <div class="form-grupo">
+                        <label class="form-label" for="msg-destino">Exibir para</label>
+                        <select id="msg-destino" class="form-input">
+                            <option value="ativa">Cliente Ativo</option>
+                            <option value="inativa">Cliente Inativo</option>
+                            <option value="excluida" selected>Cliente Excluído</option>
+                        </select>
+                    </div>
+
+                    <div class="form-grupo">
+                        <label class="form-label" for="msg-texto">Mensagem</label>
+                        <textarea
+                            id="msg-texto"
+                            class="form-input"
+                            placeholder="Ex: Sua conta foi desativada. Entre em contato pelo WhatsApp (XX) XXXXX-XXXX para mais informações."
+                            rows="3"
+                        ></textarea>
+                    </div>
+
+                    <button type="button" class="btn btn-primario btn-bloco" id="btn-salvar-mensagens">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        <span id="btn-salvar-msg-texto">Salvar Mensagem</span>
+                        <div class="spinner" id="btn-salvar-msg-spinner" style="display:none;"></div>
+                    </button>
+
+                    <!-- Lista de mensagens criadas -->
+                    <div id="lista-mensagens" class="lista-mensagens"></div>
+                </div>
+            </section>
+
+            <!-- Seção: Lista de Faturas -->
+            <section class="admin-section">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    Faturas Recentes
+                </h2>
+
+                <div class="card" style="overflow-x:auto;">
+                    <div id="lista-faturas-vazia" class="sem-dados">
+                        <p>Carregando faturas...</p>
+                    </div>
+                    <table class="tabela-clientes" id="tabela-faturas" style="display:none;">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Referência</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-faturas-body">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Overlay de Carregamento (logout) -->
+    <div id="overlay-saindo" class="overlay-saindo" style="display:none;">
+        <div class="spinner spinner-primario" style="width:40px;height:40px;"></div>
+        <p>Saindo...</p>
+    </div>
+
+    <!-- Container de Toasts -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Firebase & Lógica do Admin -->
+    <script type="module" src="js/admin.js"></script>
+
+</body>
+</html>
