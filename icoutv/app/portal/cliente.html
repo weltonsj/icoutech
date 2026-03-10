@@ -31,16 +31,28 @@
 
         <!-- Cabeçalho com gradiente -->
         <header class="portal-header" style="position:relative;">
-            <button id="btn-logout" class="btn-logout">Sair</button>
+            <div style="position:absolute;top:12px;right:12px;">
+                <button id="btn-logout" class="btn-logout">Sair</button>
+            </div>
             <div class="logo-texto" style="font-size:1.5rem;font-weight:700;margin-bottom:0.5rem;">
                 iCou<span style="opacity:0.9;">TV</span>
             </div>
             <p class="saudacao" id="saudacao">Olá, Cliente!</p>
             <p class="saudacao-sub">Gerencie sua assinatura com facilidade</p>
+            <button id="btn-config-cliente" class="btn-config-cliente" title="Meus Dados">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                </svg>
+                <span>Meus Dados</span>
+            </button>
         </header>
 
         <!-- Cards do Portal -->
         <main class="portal-conteudo">
+
+            <!-- Banner de Promoção (carregado do Firestore) -->
+            <div id="banner-promocao" class="banner-promocao" style="display:none;"></div>
 
             <!-- Card 1: Status da Assinatura -->
             <div class="card">
@@ -55,14 +67,15 @@
                 <div style="display:flex;align-items:center;justify-content:space-between;">
                     <div>
                         <p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-texto-claro);">Situação atual</p>
-                        <span id="status-conta" class="badge badge-ativa" style="margin-top:4px;">Carregando...</span>
+                        <div id="status-acesso-visual" style="display:none;margin-top:4px;"></div>
+                        <span id="status-conta" class="badge badge-ativo" style="margin-top:4px;display:none;">Carregando...</span>
                     </div>
                     <div style="text-align:right;">
                         <p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-texto-claro);">Referência</p>
                         <p id="mes-referencia" style="font-weight:600;font-size:var(--fonte-tamanho-base);">--/----</p>
                     </div>
                 </div>
-                <div id="vencimento-info" style="display:none;margin-top:var(--espacamento-md);padding-top:var(--espacamento-sm);border-top:1px solid var(--cor-borda);">
+                <div id="vencimento-cliente-info" style="display:none;margin-top:var(--espacamento-md);padding-top:var(--espacamento-sm);border-top:1px solid var(--cor-borda);">
                     <div style="display:flex;align-items:center;gap:var(--espacamento-sm);">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-primaria)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;">
                             <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
@@ -72,11 +85,71 @@
                         </svg>
                         <div>
                             <p style="font-size:var(--fonte-tamanho-xs);color:var(--cor-texto-claro);">Vencimento</p>
-                            <p id="data-vencimento" style="font-weight:600;font-size:var(--fonte-tamanho-base);">--/--/----</p>
+                            <p id="data-vencimento-cliente" style="font-weight:600;font-size:var(--fonte-tamanho-base);">--/--/---- às --:--</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Indicador visual de prazo restante -->
+                <div id="prazo-restante-info" class="prazo-restante" style="display:none;">
+                    <span id="prazo-restante-icone">⏳</span>
+                    <span id="prazo-restante-texto">Calculando...</span>
+                </div>
+            </div>
+
+            <!-- Aviso de vencimento próximo / atraso -->
+            <div id="aviso-plano" class="aviso-plano" style="display:none;"></div>
+
+            <!-- Card: Dados da Conta -->
+            <div class="card" id="card-dados-conta">
+                <div class="card-titulo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    Dados da Conta
+                </div>
+                <div class="dados-conta-lista">
+                    <div class="dados-conta-item">
+                        <span class="dados-conta-label">Usuário</span>
+                        <div class="dados-conta-valor-box">
+                            <span id="dados-conta-usuario" class="dados-conta-valor">--</span>
+                            <button class="btn-ico-copiar" id="btn-copiar-usuario" title="Copiar usuário">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="dados-conta-item">
+                        <span class="dados-conta-label">Senha</span>
+                        <div class="dados-conta-valor-box">
+                            <span id="dados-conta-senha" class="dados-conta-valor">********</span>
+                            <button class="btn-ico-copiar" id="btn-toggle-senha" title="Mostrar senha">
+                                <svg id="ico-olho-senha" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                            <button class="btn-ico-copiar" id="btn-copiar-senha" title="Copiar senha">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="dados-conta-item">
+                        <span class="dados-conta-label">Pacote</span>
+                        <div class="dados-conta-valor-box">
+                            <span id="dados-conta-pacote" class="dados-conta-valor dados-conta-pacote-badge">--</span>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Countdown de bloqueio de acesso -->
+            <div id="countdown-bloqueio" class="countdown-bloqueio" style="display:none;"></div>
 
             <!-- Card 2: Fatura / PDF -->
             <div class="card" id="card-fatura">
@@ -114,6 +187,25 @@
                         </svg>
                         <span>Visualizar</span>
                     </button>
+                    <button id="btn-ja-paguei" class="btn btn-ja-paguei" style="display:none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        <span id="btn-ja-paguei-texto">Já realizei o pagamento</span>
+                        <div class="spinner" id="btn-ja-paguei-spinner" style="display:none;"></div>
+                    </button>
+                </div>
+
+                <!-- Timer de validade da fatura -->
+                <div id="timer-validade-fatura" class="timer-validade" style="display:none;"></div>
+
+                <!-- Confirmação visual de pagamento -->
+                <div id="confirmacao-pagamento" class="confirmacao-pagamento" style="display:none;">
+                    <div class="confirmacao-icone">✅</div>
+                    <p class="confirmacao-titulo">Pagamento confirmado</p>
+                    <p class="confirmacao-subtitulo">Seu acesso está ativo até:</p>
+                    <p class="confirmacao-data" id="confirmacao-data-acesso">--/--/----</p>
                 </div>
 
                 <!-- Sem fatura -->
@@ -154,6 +246,9 @@
                     <span id="btn-copiar-texto">Copiar Código PIX</span>
                 </button>
 
+                <!-- Instrução pós-cópia -->
+                <p id="pix-instrucao-copiar" class="pix-instrucao" style="display:none;"></p>
+
                 <!-- Sem PIX -->
                 <div id="sem-pix" class="sem-dados" style="display:none;">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -162,6 +257,26 @@
                     </svg>
                     <p>Nenhum código PIX disponível no momento.</p>
                 </div>
+            </div>
+
+            <!-- Card 4: Suporte via WhatsApp -->
+            <div class="card card-suporte">
+                <div class="card-titulo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Precisa de ajuda?
+                </div>
+                <p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-texto-claro);margin-bottom:var(--espacamento-md);">
+                    Fale com nosso suporte pelo WhatsApp.
+                </p>
+                <a href="https://wa.me/5571983942172?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20minha%20fatura%20icouTv." target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp-suporte btn-bloco">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 0 0 .611.611l4.458-1.495A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.339 0-4.508-.758-6.262-2.044l-.438-.327-2.67.895.895-2.67-.327-.438A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                    </svg>
+                    Falar no WhatsApp
+                </a>
             </div>
 
         </main>
@@ -181,8 +296,136 @@
         <p>Saindo...</p>
     </div>
 
+    <!-- Modal: Editar Dados do Cliente -->
+    <div id="modal-editar-dados" class="modal-overlay" style="display:none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-titulo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <polyline points="16 11 18 13 22 9"></polyline>
+                    </svg>
+                    <span>Meus Dados</span>
+                </div>
+                <button class="modal-btn-fechar" id="btn-fechar-editar-dados" aria-label="Fechar">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Dados somente leitura -->
+                <p class="form-secao-titulo">Informações Pessoais</p>
+                <div class="form-grupo">
+                    <label class="form-label" for="edit-nome">Nome Completo</label>
+                    <input type="text" id="edit-nome" class="form-input campo-bloqueado" disabled>
+                </div>
+                <div class="form-grupo">
+                    <label class="form-label" for="edit-email">E-mail</label>
+                    <input type="text" id="edit-email" class="form-input campo-bloqueado" disabled>
+                </div>
+                <div class="form-grupo">
+                    <label class="form-label" for="edit-cpf">CPF</label>
+                    <input type="text" id="edit-cpf" class="form-input campo-bloqueado" disabled>
+                </div>
+                <div class="form-row">
+                    <div class="form-grupo">
+                        <label class="form-label" for="edit-usuario">Usuário</label>
+                        <input type="text" id="edit-usuario" class="form-input campo-bloqueado" disabled>
+                    </div>
+                    <div class="form-grupo">
+                        <label class="form-label" for="edit-senha">Senha</label>
+                        <input type="text" id="edit-senha" class="form-input campo-bloqueado" disabled>
+                    </div>
+                </div>
+                <div class="form-grupo">
+                    <label class="form-label" for="edit-pacote">Pacote</label>
+                    <input type="text" id="edit-pacote" class="form-input campo-bloqueado" disabled>
+                    <p style="font-size:var(--fonte-tamanho-xs);color:var(--cor-texto-claro);margin-top:2px;">Pacote definido pelo administrador.</p>
+                </div>
+
+                <hr style="border:none;border-top:1px solid var(--cor-borda);margin:var(--espacamento-md) 0 var(--espacamento-sm);">
+
+                <!-- Dados somente leitura (contato) -->
+                <p class="form-secao-titulo">Contato</p>
+                <div class="form-grupo">
+                    <label class="form-label" for="edit-telefone">Telefone</label>
+                    <input type="text" id="edit-telefone" class="form-input campo-bloqueado" disabled>
+                </div>
+
+                <hr style="border:none;border-top:1px solid var(--cor-borda);margin:var(--espacamento-sm) 0;">
+                <p class="form-secao-titulo">Endereço</p>
+                <div class="form-grupo">
+                    <label class="form-label" for="edit-cep">CEP</label>
+                    <input type="text" id="edit-cep" class="form-input campo-bloqueado" disabled>
+                </div>
+                <div class="form-grupo">
+                    <label class="form-label" for="edit-endereco">Endereço</label>
+                    <input type="text" id="edit-endereco" class="form-input campo-bloqueado" disabled>
+                </div>
+                <div class="form-row">
+                    <div class="form-grupo">
+                        <label class="form-label" for="edit-numero">Número</label>
+                        <input type="text" id="edit-numero" class="form-input campo-bloqueado" disabled>
+                    </div>
+                    <div class="form-grupo">
+                        <label class="form-label" for="edit-complemento">Complemento</label>
+                        <input type="text" id="edit-complemento" class="form-input campo-bloqueado" disabled>
+                    </div>
+                </div>
+                <div class="form-grupo">
+                    <label class="form-label" for="edit-bairro">Bairro</label>
+                    <input type="text" id="edit-bairro" class="form-input campo-bloqueado" disabled>
+                </div>
+                <div class="form-row">
+                    <div class="form-grupo">
+                        <label class="form-label" for="edit-cidade">Cidade</label>
+                        <input type="text" id="edit-cidade" class="form-input campo-bloqueado" disabled>
+                    </div>
+                    <div class="form-grupo">
+                        <label class="form-label" for="edit-estado">Estado</label>
+                        <input type="text" id="edit-estado" class="form-input campo-bloqueado" disabled>
+                    </div>
+                </div>
+
+                <hr style="border:none;border-top:1px solid var(--cor-borda);margin:var(--espacamento-md) 0 var(--espacamento-sm);">
+                <div class="exclusao-conta-area">
+                    <p style="font-size:var(--fonte-tamanho-xs);color:var(--cor-texto-claro);margin-bottom:var(--espacamento-sm);">Deseja encerrar sua conta? Esta ação é irreversível.</p>
+                    <button id="btn-solicitar-exclusao" class="btn btn-perigo-outline btn-bloco">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        Solicitar Exclusão de Conta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmação de Exclusão de Conta -->
+    <div id="modal-confirmar-exclusao" class="modal-overlay" style="display:none;">
+        <div class="modal-container" style="max-width:400px;">
+            <div class="modal-header" style="border-bottom:none;padding-bottom:0;">
+                <div class="modal-titulo" style="color:var(--cor-erro);">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <span>Excluir Conta</span>
+                </div>
+            </div>
+            <div class="modal-body" style="text-align:center;">
+                <p style="font-size:var(--fonte-tamanho-base);color:var(--cor-texto);margin-bottom:var(--espacamento-sm);">Tem certeza que deseja solicitar a exclusão da sua conta?</p>
+                <p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-erro);">Esta solicitação é irreversível. Todos os seus dados serão apagados no prazo máximo de 30 dias.</p>
+            </div>
+            <div class="modal-footer" style="display:flex;gap:var(--espacamento-sm);">
+                <button id="btn-cancelar-exclusao" class="btn btn-secundario" style="flex:1;">Cancelar</button>
+                <button id="btn-confirmar-exclusao" class="btn btn-perigo" style="flex:1;">Confirmar Exclusão</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Container de Toasts -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- Rodapé com versão -->
+    <footer class="portal-footer">
+        iCouTV Portal v1.2.0 | build 2026.03
+    </footer>
 
     <!-- Firebase & Lógica do Portal -->
     <script type="module" src="../js/portal.js"></script>

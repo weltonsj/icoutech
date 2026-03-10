@@ -1,5 +1,5 @@
 // ==============================================
-// Painel Admin - icouTv Portal V1.0
+// Painel Admin - icouTv Portal V1.1
 // ==============================================
 
 import { auth, db, firebaseConfig, ADMIN_EMAIL, CLOUDINARY_CONFIG } from './firebase-config.js';
@@ -24,7 +24,8 @@ import {
     deleteDoc,
     orderBy,
     limit,
-    serverTimestamp
+    serverTimestamp,
+    Timestamp
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
 // ---------- Elementos do DOM ----------
@@ -60,6 +61,15 @@ const formCliente = document.getElementById('form-cliente');
 const novoNome = document.getElementById('novo-nome');
 const novoEmail = document.getElementById('novo-email');
 const novoStatus = document.getElementById('novo-status');
+const novoUsuario = document.getElementById('novo-usuario');
+const novoSenhaServico = document.getElementById('novo-senha-servico');
+const novoDataVencimento = document.getElementById('novo-data-vencimento');
+const novoHoraValidade = document.getElementById('novo-hora-validade');
+const novoDiasRestantes = document.getElementById('novo-dias-restantes');
+const novoSituacao = document.getElementById('novo-situacao');
+const novoTelefone = document.getElementById('novo-telefone');
+const novoPacote = document.getElementById('novo-pacote');
+const novoObservacao = document.getElementById('novo-observacao');
 const btnCadastrarCliente = document.getElementById('btn-cadastrar-cliente');
 const btnCadastrarTexto = document.getElementById('btn-cadastrar-texto');
 const btnCadastrarSpinner = document.getElementById('btn-cadastrar-spinner');
@@ -79,6 +89,8 @@ const btnSalvarMensagens = document.getElementById('btn-salvar-mensagens');
 const btnSalvarMsgTexto = document.getElementById('btn-salvar-msg-texto');
 const btnSalvarMsgSpinner = document.getElementById('btn-salvar-msg-spinner');
 const listaMensagensEl = document.getElementById('lista-mensagens');
+const msgClientesAlvoGrupo = document.getElementById('msg-clientes-alvo-grupo');
+const msgClientesAlvo = document.getElementById('msg-clientes-alvo');
 
 // Formatação de Mensagens (criação)
 const msgTitulo = document.getElementById('msg-titulo');
@@ -103,28 +115,8 @@ const btnFecharModalMensagem = document.getElementById('btn-fechar-modal-mensage
 const btnSalvarEdicaoMensagem = document.getElementById('btn-salvar-edicao-mensagem');
 const btnSalvarEdicaoMsgTexto = document.getElementById('btn-salvar-edicao-msg-texto');
 const btnSalvarEdicaoMsgSpinner = document.getElementById('btn-salvar-edicao-msg-spinner');
-
-// Estado
-let arquivoPdfSelecionado = null;
-let editarPdfSelecionado = null;
-let clientesCache = {}; // Cache de clientes por UID (objeto completo)
-let faturasCache = {}; // Cache de faturas por ID (objeto completo)
-let selecaoSalva = null; // Salvar seleção do contenteditable
-
-// Salvar/restaurar seleção (para usar com color picker que rouba foco)
-function salvarSelecao() {
-    const sel = window.getSelection();
-    if (sel.rangeCount > 0) {
-        selecaoSalva = sel.getRangeAt(0);
-    }
-}
-function restaurarSelecao() {
-    if (selecaoSalva) {
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(selecaoSalva);
-    }
-}
+const editarMsgClientesAlvoGrupo = document.getElementById('editar-msg-clientes-alvo-grupo');
+const editarMsgClientesAlvo = document.getElementById('editar-msg-clientes-alvo');
 
 // Modal Editar Cliente
 const modalEditarCliente = document.getElementById('modal-editar-cliente');
@@ -132,10 +124,39 @@ const editarClienteId = document.getElementById('editar-cliente-id');
 const editarClienteNome = document.getElementById('editar-cliente-nome');
 const editarClienteEmail = document.getElementById('editar-cliente-email');
 const editarClienteStatus = document.getElementById('editar-cliente-status');
+const editarClienteUsuario = document.getElementById('editar-cliente-usuario');
+const editarClienteSenhaServico = document.getElementById('editar-cliente-senha-servico');
+const editarClienteDataVencimento = document.getElementById('editar-cliente-data-vencimento');
+const editarClienteHoraValidade = document.getElementById('editar-cliente-hora-validade');
+const editarClienteDiasRestantes = document.getElementById('editar-cliente-dias-restantes');
+const editarClienteSituacao = document.getElementById('editar-cliente-situacao');
+const editarClienteTelefone = document.getElementById('editar-cliente-telefone');
+const editarClientePacote = document.getElementById('editar-cliente-pacote');
+const editarClienteObservacao = document.getElementById('editar-cliente-observacao');
 const btnFecharModalCliente = document.getElementById('btn-fechar-modal-cliente');
 const btnSalvarEdicaoCliente = document.getElementById('btn-salvar-edicao-cliente');
 const btnSalvarEdicaoClienteTexto = document.getElementById('btn-salvar-edicao-cliente-texto');
 const btnSalvarEdicaoClienteSpinner = document.getElementById('btn-salvar-edicao-cliente-spinner');
+
+// Form Cliente - Campos CPF + Endereço
+const novoCpf = document.getElementById('novo-cpf');
+const novoCep = document.getElementById('novo-cep');
+const novoEndereco = document.getElementById('novo-endereco');
+const novoNumero = document.getElementById('novo-numero');
+const novoComplemento = document.getElementById('novo-complemento');
+const novoBairro = document.getElementById('novo-bairro');
+const novoCidade = document.getElementById('novo-cidade');
+const novoEstado = document.getElementById('novo-estado');
+
+// Modal Editar Cliente - Campos CPF + Endereço
+const editarClienteCpf = document.getElementById('editar-cliente-cpf');
+const editarClienteCep = document.getElementById('editar-cliente-cep');
+const editarClienteEndereco = document.getElementById('editar-cliente-endereco');
+const editarClienteNumero = document.getElementById('editar-cliente-numero');
+const editarClienteComplemento = document.getElementById('editar-cliente-complemento');
+const editarClienteBairro = document.getElementById('editar-cliente-bairro');
+const editarClienteCidade = document.getElementById('editar-cliente-cidade');
+const editarClienteEstado = document.getElementById('editar-cliente-estado');
 
 // Modal Editar Fatura
 const modalEditarFatura = document.getElementById('modal-editar-fatura');
@@ -154,6 +175,446 @@ const btnSalvarEdicaoFatura = document.getElementById('btn-salvar-edicao-fatura'
 const btnSalvarEdicaoFaturaTexto = document.getElementById('btn-salvar-edicao-fatura-texto');
 const btnSalvarEdicaoFaturaSpinner = document.getElementById('btn-salvar-edicao-fatura-spinner');
 
+// Filtros
+const filtroClientesNome = document.getElementById('filtro-clientes-nome');
+const filtroClientesStatus = document.getElementById('filtro-clientes-status');
+const filtroFaturasCliente = document.getElementById('filtro-faturas-cliente');
+const filtroFaturasRef = document.getElementById('filtro-faturas-ref');
+const filtroFaturasStatus = document.getElementById('filtro-faturas-status');
+const filtroLogsAcao = document.getElementById('filtro-logs-acao');
+
+// Paginação Clientes
+const paginacaoClientes = document.getElementById('paginacao-clientes');
+const paginacaoClientesInfo = document.getElementById('paginacao-clientes-info');
+const paginacaoClientesSize = document.getElementById('paginacao-clientes-size');
+const pagClientesPrev = document.getElementById('pag-clientes-prev');
+const pagClientesNext = document.getElementById('pag-clientes-next');
+const pagClientesPagina = document.getElementById('pag-clientes-pagina');
+
+// Paginação Faturas
+const paginacaoFaturas = document.getElementById('paginacao-faturas');
+const paginacaoFaturasInfo = document.getElementById('paginacao-faturas-info');
+const paginacaoFaturasSize = document.getElementById('paginacao-faturas-size');
+const pagFaturasPrev = document.getElementById('pag-faturas-prev');
+const pagFaturasNext = document.getElementById('pag-faturas-next');
+const pagFaturasPagina = document.getElementById('pag-faturas-pagina');
+
+// Estado
+let arquivoPdfSelecionado = null;
+let editarPdfSelecionado = null;
+let clientesCache = {};
+let faturasCache = {};
+let selecaoSalva = null;
+let clientesPaginaAtual = 1;
+let faturasPaginaAtual = 1;
+let allFaturasDocs = [];
+let logsCache = [];
+
+// Salvar/restaurar seleção (para usar com color picker que rouba foco)
+function salvarSelecao() {
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0) {
+        selecaoSalva = sel.getRangeAt(0);
+    }
+}
+function restaurarSelecao() {
+    if (selecaoSalva) {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(selecaoSalva);
+    }
+}
+
+// ========================================
+// UTILITÁRIOS DE DATA
+// ========================================
+function parseDateDDMMAAAA(str) {
+    if (!str) return null;
+    const partes = str.split('/');
+    if (partes.length !== 3) return null;
+    const d = parseInt(partes[0], 10);
+    const m = parseInt(partes[1], 10) - 1;
+    const a = parseInt(partes[2], 10);
+    if (isNaN(d) || isNaN(m) || isNaN(a)) return null;
+    return new Date(a, m, d);
+}
+
+function formatDateDDMMAAAA(date) {
+    if (!date) return '';
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const a = date.getFullYear();
+    return `${d}/${m}/${a}`;
+}
+
+function calcularDiasRestantes(dataVencStr, horaStr) {
+    const dataVenc = parseDateDDMMAAAA(dataVencStr);
+    if (!dataVenc) return { dias: '--', situacao: '--' };
+    const agora = new Date();
+    if (horaStr) {
+        const partes = horaStr.split(':');
+        dataVenc.setHours(parseInt(partes[0], 10) || 0, parseInt(partes[1], 10) || 0, 0, 0);
+    } else {
+        dataVenc.setHours(23, 59, 59, 999);
+    }
+    const diff = dataVenc.getTime() - agora.getTime();
+    const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return {
+        dias: dias,
+        situacao: diff > 0 ? 'Não expirado' : 'Expirado'
+    };
+}
+
+function autoCalcDataVencimento(dataInput, horaInput, diasEl, situacaoEl) {
+    const calc = calcularDiasRestantes(dataInput.value, horaInput.value);
+    if (diasEl) diasEl.value = calc.dias;
+    if (situacaoEl) situacaoEl.value = calc.situacao;
+}
+
+// Auto-cálculo no form de cadastro
+novoDataVencimento.addEventListener('input', () => autoCalcDataVencimento(novoDataVencimento, novoHoraValidade, novoDiasRestantes, novoSituacao));
+novoHoraValidade.addEventListener('input', () => autoCalcDataVencimento(novoDataVencimento, novoHoraValidade, novoDiasRestantes, novoSituacao));
+
+// Auto-cálculo no modal de edição
+editarClienteDataVencimento.addEventListener('input', () => autoCalcDataVencimento(editarClienteDataVencimento, editarClienteHoraValidade, editarClienteDiasRestantes, editarClienteSituacao));
+editarClienteHoraValidade.addEventListener('input', () => autoCalcDataVencimento(editarClienteDataVencimento, editarClienteHoraValidade, editarClienteDiasRestantes, editarClienteSituacao));
+
+// ========================================
+// DASHBOARD + PAINÉIS AUXILIARES
+// ========================================
+const dashTotalClientes = document.getElementById('dash-total-clientes');
+const dashNaoExpirados = document.getElementById('dash-nao-expirados');
+const dashExpirados = document.getElementById('dash-expirados');
+const dashSuspensos = document.getElementById('dash-suspensos');
+const dashNovosMes = document.getElementById('dash-novos-mes');
+const dashFaturasPendentes = document.getElementById('dash-faturas-pendentes');
+const dashFaturasPagasHoje = document.getElementById('dash-faturas-pagas-hoje');
+const listaPrestesVencer = document.getElementById('lista-prestes-vencer');
+const expiradosHojeBody = document.getElementById('expirados-hoje-body');
+const expirados3diasBody = document.getElementById('expirados-3dias-body');
+const expirados7diasBody = document.getElementById('expirados-7dias-body');
+const listaExpiradosVazia = document.getElementById('lista-expirados-vazia');
+const btnVerPainel = document.getElementById('btn-ver-painel');
+const avisoVencBloqueado = document.getElementById('aviso-venc-bloqueado');
+
+// Contador faturas pagas hoje (localStorage por dia)
+let faturasPagasHojeContador = 0;
+
+function inicializarContadorFaturasPagas() {
+    const hojeKey = new Date().toISOString().slice(0, 10);
+    const savedDate = localStorage.getItem('icoutv_faturas_pagas_data');
+    if (savedDate === hojeKey) {
+        faturasPagasHojeContador = parseInt(localStorage.getItem('icoutv_faturas_pagas_contador') || '0', 10);
+    } else {
+        faturasPagasHojeContador = 0;
+        localStorage.setItem('icoutv_faturas_pagas_data', hojeKey);
+        localStorage.setItem('icoutv_faturas_pagas_contador', '0');
+    }
+}
+
+function incrementarFaturasPagas() {
+    faturasPagasHojeContador++;
+    localStorage.setItem('icoutv_faturas_pagas_contador', String(faturasPagasHojeContador));
+    localStorage.setItem('icoutv_faturas_pagas_data', new Date().toISOString().slice(0, 10));
+    dashFaturasPagasHoje.textContent = faturasPagasHojeContador;
+}
+
+function decrementarFaturasPagas() {
+    faturasPagasHojeContador = Math.max(0, faturasPagasHojeContador - 1);
+    localStorage.setItem('icoutv_faturas_pagas_contador', String(faturasPagasHojeContador));
+    dashFaturasPagasHoje.textContent = faturasPagasHojeContador;
+}
+
+// Template WhatsApp (configurável pelo admin)
+let whatsAppTemplate = 'Olá %nome%, sua assinatura icouTv venceu em %data_vencimento%. Renove agora pelo portal: https://icoutech.com/icoutv/app';
+
+async function carregarWhatsAppConfig() {
+    try {
+        const snap = await getDoc(doc(db, 'configuracoes', 'whatsapp'));
+        if (snap.exists() && snap.data().template) {
+            whatsAppTemplate = snap.data().template;
+        }
+        const templateEl = document.getElementById('whatsapp-msg-template');
+        if (templateEl) templateEl.value = whatsAppTemplate;
+    } catch (e) { console.warn('Erro ao carregar config WhatsApp:', e); }
+}
+
+// ---------- Carregar Promoção ----------
+async function carregarPromocao() {
+    try {
+        const snap = await getDoc(doc(db, 'configuracoes', 'promocao'));
+        if (snap.exists()) {
+            const d = snap.data();
+            const ativaEl = document.getElementById('promo-ativa');
+            const tituloEl = document.getElementById('promo-titulo');
+            const textoEl = document.getElementById('promo-texto');
+            if (ativaEl) ativaEl.checked = !!d.ativa;
+            if (tituloEl) tituloEl.value = d.titulo || '';
+            if (textoEl) textoEl.value = d.texto || '';
+        }
+    } catch (e) { console.warn('Erro ao carregar promoção:', e); }
+}
+
+// Botão scrollar para painel (legacy, removido do HTML)
+if (btnVerPainel) {
+    btnVerPainel.addEventListener('click', () => {
+        const proximaSecao = document.getElementById('secao-prestes-vencer');
+        if (proximaSecao) proximaSecao.scrollIntoView({ behavior: 'smooth' });
+    });
+}
+
+// ========================================
+// NAVEGAÇÃO SIDEBAR + PÁGINAS
+// ========================================
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+const btnAbrirSidebar = document.getElementById('btn-abrir-sidebar');
+const btnFecharSidebar = document.getElementById('btn-fechar-sidebar');
+const topbarTitulo = document.getElementById('topbar-titulo');
+
+const paginaTitulos = {
+    dashboard: 'Dashboard',
+    clientes: 'Clientes',
+    faturas: 'Faturas',
+    notificacoes: 'Notificações',
+    configuracoes: 'Configurações',
+    logs: 'Logs de Ações'
+};
+
+let paginaAtual = 'dashboard';
+
+function navegarPara(pagina) {
+    paginaAtual = pagina;
+    // Mostrar/ocultar seções
+    document.querySelectorAll('.admin-container > [data-pagina]').forEach(el => {
+        el.style.display = el.dataset.pagina === pagina ? '' : 'none';
+    });
+    // Atualizar sidebar ativa
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.classList.toggle('ativo', link.dataset.pagina === pagina);
+    });
+    // Atualizar título topbar
+    if (topbarTitulo) topbarTitulo.textContent = paginaTitulos[pagina] || pagina;
+    // Scroll ao topo
+    window.scrollTo({ top: 0 });
+    // Fechar sidebar mobile
+    fecharSidebar();
+}
+
+function abrirSidebar() {
+    if (sidebar) sidebar.classList.add('aberta');
+    if (sidebarOverlay) sidebarOverlay.classList.add('ativo');
+}
+
+function fecharSidebar() {
+    if (sidebar) sidebar.classList.remove('aberta');
+    if (sidebarOverlay) sidebarOverlay.classList.remove('ativo');
+}
+
+// Links sidebar
+document.querySelectorAll('.sidebar-link[data-pagina]').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        navegarPara(link.dataset.pagina);
+    });
+});
+
+// Hamburger / fechar sidebar
+if (btnAbrirSidebar) btnAbrirSidebar.addEventListener('click', abrirSidebar);
+if (btnFecharSidebar) btnFecharSidebar.addEventListener('click', fecharSidebar);
+if (sidebarOverlay) sidebarOverlay.addEventListener('click', fecharSidebar);
+
+// Atalhos Dashboard
+document.querySelectorAll('.dash-atalho[data-ir-pagina]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        navegarPara(btn.dataset.irPagina);
+    });
+});
+
+// Botão "Ver todas notificações" no dashboard
+const btnVerNotificacoes = document.getElementById('btn-ver-notificacoes');
+if (btnVerNotificacoes) {
+    btnVerNotificacoes.addEventListener('click', () => navegarPara('notificacoes'));
+}
+
+// Dashboard mini-notificações preview
+function renderizarDashNotifPreview() {
+    const preview = document.getElementById('dash-notificacoes-preview');
+    const badge = document.getElementById('dash-notif-badge');
+    const sidebarBadge = document.getElementById('sidebar-badge-notif');
+    if (!preview) return;
+
+    const pendentes = confirmacoesPagamentoCache.filter(c => c.status === 'pendente');
+    const count = pendentes.length;
+
+    // Badges
+    if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline' : 'none';
+    }
+    if (sidebarBadge) {
+        sidebarBadge.textContent = count;
+        sidebarBadge.style.display = count > 0 ? 'inline' : 'none';
+    }
+
+    if (count === 0) {
+        preview.innerHTML = '<p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-texto-claro);padding:var(--espacamento-sm) 0;">Nenhuma confirmação pendente.</p>';
+        return;
+    }
+
+    const primeiros = pendentes.slice(0, 3);
+    preview.innerHTML = primeiros.map(c => {
+        const nome = c.nome_cliente || c.email_cliente || 'Cliente';
+        const tipo = c.tipo === 'exclusao_conta' ? '🗑️ Exclusão' : '💰 Pagamento';
+        return `<div class="dash-notif-item"><span>${tipo}</span><strong>${escapeHTML(nome)}</strong></div>`;
+    }).join('');
+
+    if (count > 3) {
+        preview.innerHTML += `<p style="font-size:var(--fonte-tamanho-xs);color:var(--cor-texto-claro);padding-top:var(--espacamento-xs);">+ ${count - 3} mais...</p>`;
+    }
+}
+
+// Inicializar página: mostrar apenas dashboard
+function inicializarPaginas() {
+    navegarPara('dashboard');
+}
+
+function atualizarPaineis() {
+    renderizarDashboard();
+    renderizarPrestesAVencer();
+    renderizarClientesExpirados();
+}
+
+function renderizarDashboard() {
+    const clientes = Object.entries(clientesCache);
+    const agora = new Date();
+    const mesAtual = agora.getMonth();
+    const anoAtual = agora.getFullYear();
+
+    let naoExpirados = 0;
+    let expirados = 0;
+    let suspensos = 0;
+    let novosMes = 0;
+
+    clientes.forEach(([id, c]) => {
+        if (c.status_conta === 'suspenso') { suspensos++; return; }
+        if (c.status_conta === 'excluido') return;
+        const calc = calcularDiasRestantes(c.data_vencimento_cliente, c.hora_validade);
+        if (typeof calc.dias === 'number' && calc.dias > 0) naoExpirados++;
+        else expirados++;
+        // Novos no mês: criado_em é Firestore Timestamp
+        if (c.criado_em) {
+            const dataCriacao = c.criado_em.toDate ? c.criado_em.toDate() : new Date(c.criado_em);
+            if (dataCriacao.getMonth() === mesAtual && dataCriacao.getFullYear() === anoAtual) novosMes++;
+        }
+    });
+
+    let faturasPendentes = 0;
+
+    allFaturasDocs.forEach(f => {
+        if (f.status_pagamento === 'pendente') faturasPendentes++;
+    });
+
+    dashNaoExpirados.textContent = naoExpirados;
+    dashExpirados.textContent = expirados;
+    dashSuspensos.textContent = suspensos;
+    dashNovosMes.textContent = novosMes;
+    dashFaturasPendentes.textContent = faturasPendentes;
+    dashFaturasPagasHoje.textContent = faturasPagasHojeContador;
+    if (dashTotalClientes) dashTotalClientes.textContent = naoExpirados + expirados + suspensos;
+}
+
+function renderizarPrestesAVencer() {
+    const clientes = Object.entries(clientesCache)
+        .map(([id, c]) => {
+            if (c.status_conta === 'suspenso' || c.status_conta === 'excluido') return null;
+            const calc = calcularDiasRestantes(c.data_vencimento_cliente, c.hora_validade);
+            if (typeof calc.dias === 'number' && calc.dias > 0 && calc.dias <= 3) {
+                return { id, ...c, dias_restantes_calc: calc.dias };
+            }
+            return null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.dias_restantes_calc - b.dias_restantes_calc);
+
+    if (clientes.length === 0) {
+        listaPrestesVencer.innerHTML = '<p class="sem-dados-texto">Nenhum cliente prestes a vencer.</p>';
+        return;
+    }
+
+    listaPrestesVencer.innerHTML = `
+        <table class="tabela-alertas">
+            <thead><tr><th>Nome</th><th>Telefone</th><th>Vencimento</th><th>Pacote</th><th>Dias</th></tr></thead>
+            <tbody>${clientes.map(c => `
+                <tr>
+                    <td>${escapeHTML(c.nome_completo || '--')}</td>
+                    <td>${escapeHTML(c.telefone || '--')}</td>
+                    <td>${escapeHTML(c.data_vencimento_cliente || '--')}</td>
+                    <td>${escapeHTML(c.pacote || '--')}</td>
+                    <td><span class="badge-dias badge-dias-alerta">${c.dias_restantes_calc}d</span></td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
+function renderizarClientesExpirados() {
+    const hoje = [];
+    const ate3dias = [];
+    const ate7dias = [];
+
+    Object.entries(clientesCache).forEach(([id, c]) => {
+        if (c.status_conta === 'suspenso' || c.status_conta === 'excluido') return;
+        const calc = calcularDiasRestantes(c.data_vencimento_cliente, c.hora_validade);
+        if (typeof calc.dias !== 'number' || calc.dias > 0) return;
+        const diasNeg = Math.abs(calc.dias);
+        const item = { id, ...c, dias_expirado: diasNeg };
+        if (diasNeg === 0) hoje.push(item);
+        else if (diasNeg <= 3) ate3dias.push(item);
+        else if (diasNeg <= 7) ate7dias.push(item);
+    });
+
+    const temDados = hoje.length > 0 || ate3dias.length > 0 || ate7dias.length > 0;
+
+    function renderGrupo(container, lista, grupoId) {
+        const grupoEl = document.getElementById(grupoId);
+        if (lista.length === 0) {
+            grupoEl.style.display = 'none';
+            return;
+        }
+        grupoEl.style.display = 'block';
+        container.innerHTML = lista.map(c => `
+            <div class="alerta-item alerta-item-expirado">
+                <div class="alerta-item-info">
+                    <strong>${escapeHTML(c.nome_completo || '--')}</strong>
+                    <span>${escapeHTML(c.telefone || '--')}</span>
+                </div>
+                <div class="alerta-item-meta">
+                    <span>Venc: ${escapeHTML(c.data_vencimento_cliente || '--')}</span>
+                    <span>${escapeHTML(c.pacote || '--')}</span>
+                </div>
+            </div>`).join('');
+    }
+
+    renderGrupo(expiradosHojeBody, hoje, 'lista-expirados-hoje');
+    renderGrupo(expirados3diasBody, ate3dias, 'lista-expirados-3dias');
+    renderGrupo(expirados7diasBody, ate7dias, 'lista-expirados-7dias');
+
+    if (temDados) {
+        listaExpiradosVazia.style.display = 'none';
+    } else {
+        listaExpiradosVazia.innerHTML = '<p>Nenhum cliente expirado no momento.</p>';
+        listaExpiradosVazia.style.display = 'block';
+    }
+}
+
+function formatarTelefoneWhatsApp(telefone) {
+    if (!telefone) return '';
+    let num = telefone.replace(/\D/g, '');
+    if (num.startsWith('0')) num = num.substring(1);
+    if (!num.startsWith('55')) num = '55' + num;
+    return num;
+}
+
 // ---------- Verificar Autenticação & Permissão ----------
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -161,7 +622,6 @@ onAuthStateChanged(auth, async (user) => {
         return;
     }
 
-    // Verificar se é o administrador
     if (user.email !== ADMIN_EMAIL) {
         carregando.style.display = 'none';
         acessoNegado.style.display = 'flex';
@@ -172,10 +632,62 @@ onAuthStateChanged(auth, async (user) => {
     carregando.style.display = 'none';
     adminApp.style.display = 'block';
 
-    // Carregar dados
+    inicializarPaginas();
+    inicializarContadorFaturasPagas();
+
     await carregarClientes();
     await carregarFaturas();
+    atualizarPaineis();
     await carregarMensagens();
+    await carregarWhatsAppConfig();
+    await carregarPromocao();
+    await carregarConfirmacoesPagamento();
+    await carregarLogs();
+
+    // Salvar config WhatsApp
+    const btnSalvarWhatsApp = document.getElementById('btn-salvar-whatsapp');
+    if (btnSalvarWhatsApp) {
+        btnSalvarWhatsApp.addEventListener('click', async () => {
+            const templateEl = document.getElementById('whatsapp-msg-template');
+            const template = templateEl ? templateEl.value.trim() : '';
+            if (!template) { mostrarToast('Informe a mensagem de cobrança.', 'erro'); return; }
+            btnSalvarWhatsApp.disabled = true;
+            try {
+                await setDoc(doc(db, 'configuracoes', 'whatsapp'), { template });
+                whatsAppTemplate = template;
+                await registrarLog('whatsapp_config', 'Template de cobrança WhatsApp atualizado');
+                mostrarToast('Configuração do WhatsApp salva!', 'sucesso');
+            } catch (error) {
+                console.error('Erro ao salvar config WhatsApp:', error);
+                mostrarToast('Erro ao salvar configuração.', 'erro');
+            }
+            btnSalvarWhatsApp.disabled = false;
+        });
+    }
+
+    // Salvar promoção
+    const btnSalvarPromo = document.getElementById('btn-salvar-promocao');
+    if (btnSalvarPromo) {
+        btnSalvarPromo.addEventListener('click', async () => {
+            const ativa = document.getElementById('promo-ativa')?.checked || false;
+            const titulo = document.getElementById('promo-titulo')?.value.trim() || '';
+            const texto = document.getElementById('promo-texto')?.value.trim() || '';
+            if (ativa && !titulo && !texto) {
+                mostrarToast('Informe o título ou texto da promoção.', 'erro');
+                return;
+            }
+            btnSalvarPromo.disabled = true;
+            try {
+                await setDoc(doc(db, 'configuracoes', 'promocao'), { ativa, titulo, texto });
+                await registrarLog('promocao_config', ativa ? 'Promoção ativada' : 'Promoção desativada');
+                mostrarToast('Promoção salva com sucesso!', 'sucesso');
+            } catch (error) {
+                console.error('Erro ao salvar promoção:', error);
+                mostrarToast('Erro ao salvar promoção.', 'erro');
+            }
+            btnSalvarPromo.disabled = false;
+        });
+    }
 });
 
 // ---------- Logout ----------
@@ -193,12 +705,12 @@ btnLogout.addEventListener('click', async () => {
 });
 
 // ========================================
-// BUSCAR CLIENTE POR E-MAIL
+// BUSCAR CLIENTE POR NOME OU E-MAIL
 // ========================================
 btnBuscarCliente.addEventListener('click', async () => {
-    const email = clienteEmailInput.value.trim();
-    if (!email) {
-        mostrarToast('Informe o e-mail do cliente.', 'erro');
+    const termo = clienteEmailInput.value.trim().toLowerCase();
+    if (!termo) {
+        mostrarToast('Informe o nome ou e-mail do cliente.', 'erro');
         return;
     }
 
@@ -206,16 +718,35 @@ btnBuscarCliente.addEventListener('click', async () => {
     clienteNaoEncontrado.style.display = 'none';
 
     try {
+        // Buscar todos os clientes e filtrar localmente por nome ou email
         const clientesRef = collection(db, 'clientes');
-        const q = query(clientesRef, where('email', '==', email));
-        const snap = await getDocs(q);
+        const snap = await getDocs(clientesRef);
+        let encontrado = null;
 
-        if (!snap.empty) {
-            const clienteDoc = snap.docs[0];
-            const dados = clienteDoc.data();
+        snap.forEach((docSnap) => {
+            const dados = docSnap.data();
+            const email = (dados.email || '').toLowerCase();
+            const nome = (dados.nome_completo || '').toLowerCase();
+            if (email === termo || nome.includes(termo)) {
+                if (!encontrado) encontrado = { id: docSnap.id, dados };
+            }
+        });
+
+        if (encontrado) {
+            const dados = encontrado.dados;
             clienteNomeEncontrado.textContent = `${dados.nome_completo} (${dados.status_conta})`;
-            clienteUid.textContent = clienteDoc.id;
+            clienteUid.textContent = encontrado.id;
             clienteInfo.style.display = 'block';
+            // Auto-preencher data de vencimento do cliente na fatura
+            if (dados.data_vencimento_cliente) {
+                const dataVencCliente = parseDateDDMMAAAA(dados.data_vencimento_cliente);
+                if (dataVencCliente) {
+                    const yyyy = dataVencCliente.getFullYear();
+                    const mm = String(dataVencCliente.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dataVencCliente.getDate()).padStart(2, '0');
+                    dataVencimentoInput.value = `${yyyy}-${mm}-${dd}`;
+                }
+            }
             mostrarToast('Cliente encontrado!', 'sucesso');
         } else {
             clienteNaoEncontrado.style.display = 'block';
@@ -262,7 +793,6 @@ inputPdf.addEventListener('change', (e) => {
     }
 });
 
-// ---------- Upload para Cloudinary ----------
 async function uploadParaCloudinary(arquivo) {
     const formData = new FormData();
     formData.append('file', arquivo);
@@ -298,30 +828,16 @@ formFatura.addEventListener('submit', async (e) => {
     const status = statusPagamento.value;
     const dataVenc = dataVencimentoInput.value;
 
-    // Validações
-    if (!uidCliente) {
-        mostrarToast('Busque e selecione um cliente primeiro.', 'erro');
-        return;
-    }
-    if (!mesRef) {
-        mostrarToast('Informe o mês de referência.', 'erro');
-        return;
-    }
-    if (!dataVenc) {
-        mostrarToast('Informe a data de vencimento.', 'erro');
-        return;
-    }
-    if (!codigoPix) {
-        mostrarToast('Informe o código PIX.', 'erro');
-        return;
-    }
+    if (!uidCliente) { mostrarToast('Busque e selecione um cliente primeiro.', 'erro'); return; }
+    if (!mesRef) { mostrarToast('Informe o mês de referência.', 'erro'); return; }
+    if (!dataVenc) { mostrarToast('Informe a data de vencimento.', 'erro'); return; }
+    if (!codigoPix) { mostrarToast('Informe o código PIX.', 'erro'); return; }
 
     setCarregandoFatura(true);
 
     try {
         let urlPdf = urlPdfManual.value.trim();
 
-        // Se tem arquivo PDF selecionado, fazer upload no Cloudinary
         if (arquivoPdfSelecionado && !urlPdf) {
             try {
                 urlPdf = await uploadParaCloudinary(arquivoPdfSelecionado);
@@ -340,7 +856,6 @@ formFatura.addEventListener('submit', async (e) => {
             return;
         }
 
-        // Salvar fatura no Firestore
         const faturaData = {
             id_cliente: uidCliente,
             mes_referencia: mesRef,
@@ -352,17 +867,16 @@ formFatura.addEventListener('submit', async (e) => {
         };
 
         await addDoc(collection(db, 'faturas'), faturaData);
+        await registrarLog('fatura_criada', `Fatura ${mesRef} criada para cliente ${clientesCache[uidCliente]?.nome_completo || uidCliente}`);
 
         mostrarToast('Fatura salva com sucesso!', 'sucesso');
 
-        // Limpar formulário
         formFatura.reset();
         clienteInfo.style.display = 'none';
         clienteUid.textContent = '';
         nomeArquivo.style.display = 'none';
         arquivoPdfSelecionado = null;
 
-        // Recarregar tabela de faturas
         await carregarFaturas();
 
     } catch (error) {
@@ -382,9 +896,6 @@ function setCarregandoFatura(carregando) {
 // ========================================
 // CADASTRAR CLIENTE (Firebase Auth + Firestore)
 // ========================================
-// Usa um app Firebase secundário para criar o usuário
-// sem deslogar o admin da sessão principal.
-// ========================================
 formCliente.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -397,13 +908,11 @@ formCliente.addEventListener('submit', async (e) => {
         return;
     }
 
-    // Gerar senha temporária aleatória (o cliente vai redefinir via e-mail)
     const senha = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(36)).join('').slice(0, 16);
 
     setCarregandoCliente(true);
 
     try {
-        // Verificar se já existe no Firestore
         const clientesRef = collection(db, 'clientes');
         const q = query(clientesRef, where('email', '==', email));
         const snap = await getDocs(q);
@@ -414,8 +923,6 @@ formCliente.addEventListener('submit', async (e) => {
             return;
         }
 
-        // ----- CRIAR USUÁRIO NO FIREBASE AUTH -----
-        // App secundário para não deslogar o admin
         const appSecundario = initializeApp(firebaseConfig, 'cadastro-cliente');
         const authSecundario = getAuth(appSecundario);
 
@@ -423,30 +930,43 @@ formCliente.addEventListener('submit', async (e) => {
         try {
             const userCredential = await createUserWithEmailAndPassword(authSecundario, email, senha);
             uid = userCredential.user.uid;
-
-            // Deslogar do app secundário (não afeta o admin)
             await signOut(authSecundario);
         } catch (authError) {
-            // Limpar app secundário em caso de erro
             await deleteApp(appSecundario);
-
             const msgErro = traduzirErroAuth(authError.code);
             mostrarToast(msgErro, 'erro');
             setCarregandoCliente(false);
             return;
         }
 
-        // Deletar app secundário
         await deleteApp(appSecundario);
 
-        // ----- SALVAR NO FIRESTORE (com o UID do Auth como ID do documento) -----
-        await setDoc(doc(db, 'clientes', uid), {
+        const clienteData = {
             nome_completo: nome,
             email: email,
-            status_conta: status
-        });
+            status_conta: status,
+            cpf: novoCpf.value.trim(),
+            usuario: novoUsuario.value.trim(),
+            senha_servico: novoSenhaServico.value.trim(),
+            data_vencimento_cliente: novoDataVencimento.value.trim(),
+            hora_validade: novoHoraValidade.value.trim(),
+            telefone: novoTelefone.value.trim(),
+            observacao: novoObservacao.value.trim(),
+            pacote: novoPacote.value.trim() || 'Pacote Básico',
+            dados_endereco: {
+                cep: novoCep.value.trim(),
+                endereco: novoEndereco.value.trim(),
+                numero: novoNumero.value.trim(),
+                complemento: novoComplemento.value.trim(),
+                bairro: novoBairro.value.trim(),
+                cidade: novoCidade.value.trim(),
+                estado: novoEstado.value.trim()
+            }
+        };
 
-        // ----- ENVIAR E-MAIL DE REDEFINIÇÃO DE SENHA -----
+        await setDoc(doc(db, 'clientes', uid), clienteData);
+        await registrarLog('cliente_criado', `Cliente "${nome}" (${email}) cadastrado`);
+
         try {
             await sendPasswordResetEmail(auth, email);
             mostrarToast(`Cliente "${nome}" criado! E-mail de redefinição enviado.`, 'sucesso');
@@ -455,10 +975,11 @@ formCliente.addEventListener('submit', async (e) => {
             mostrarToast(`Cliente "${nome}" criado com sucesso! (e-mail não enviado)`, 'sucesso');
         }
 
-        // Limpar formulário
         formCliente.reset();
+        novoPacote.value = 'Pacote Básico';
+        novoDiasRestantes.value = '';
+        novoSituacao.value = '';
 
-        // Recarregar tabela
         await carregarClientes();
 
     } catch (error) {
@@ -486,144 +1007,325 @@ function setCarregandoCliente(carregando) {
 }
 
 // ========================================
-// CARREGAR CLIENTES
+// CARREGAR CLIENTES (com filtro + paginação)
 // ========================================
 async function carregarClientes() {
     try {
         const clientesRef = collection(db, 'clientes');
         const snap = await getDocs(clientesRef);
 
-        tabelaClientesBody.innerHTML = '';
         clientesCache = {};
-
-        if (snap.empty) {
-            tabelaClientes.style.display = 'none';
-            listaClientesVazia.innerHTML = '<p>Nenhum cliente cadastrado.</p>';
-            listaClientesVazia.style.display = 'block';
-            return;
-        }
-
-        listaClientesVazia.style.display = 'none';
-        tabelaClientes.style.display = 'table';
+        let todosClientes = [];
 
         snap.forEach((docSnap) => {
             const dados = docSnap.data();
             clientesCache[docSnap.id] = dados;
-
-            const statusCliente = dados.status_conta || 'ativa';
-            const nomeCliente = escapeHTML(dados.nome_completo || dados.email);
-            const tr = document.createElement('tr');
-
-            // Botões comuns: Editar + Reenviar senha
-            let botoesHtml = `
-                <button class="btn btn-sm btn-editar-cliente" data-id="${docSnap.id}" style="background:var(--cor-primaria);color:#fff;border:none;" title="Editar cliente">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
-                </button>
-                <button class="btn btn-sm btn-reenviar-senha" data-id="${docSnap.id}" style="background:#3b82f6;color:#fff;border:none;" title="Reenviar e-mail de redefinição de senha">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
-                </button>`;
-
-            if (statusCliente === 'ativa') {
-                // Ativa: pode Inativar ou Excluir
-                botoesHtml += `
-                    <button class="btn btn-sm btn-alterar-status" data-id="${docSnap.id}" data-nome="${nomeCliente}" data-novo-status="inativa" style="background:var(--cor-pendente);color:#fff;border:none;" title="Inativar cliente">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-                    </button>
-                    <button class="btn btn-perigo btn-sm btn-alterar-status" data-id="${docSnap.id}" data-nome="${nomeCliente}" data-novo-status="excluida" title="Excluir cliente">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>`;
-            } else if (statusCliente === 'inativa') {
-                // Inativa: pode Ativar ou Excluir
-                botoesHtml += `
-                    <button class="btn btn-sm btn-alterar-status" data-id="${docSnap.id}" data-nome="${nomeCliente}" data-novo-status="ativa" style="background:var(--cor-sucesso);color:#fff;border:none;" title="Ativar cliente">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </button>
-                    <button class="btn btn-perigo btn-sm btn-alterar-status" data-id="${docSnap.id}" data-nome="${nomeCliente}" data-novo-status="excluida" title="Excluir cliente">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>`;
-            } else {
-                // Excluída: pode Ativar
-                botoesHtml += `
-                    <button class="btn btn-sm btn-alterar-status" data-id="${docSnap.id}" data-nome="${nomeCliente}" data-novo-status="ativa" style="background:var(--cor-sucesso);color:#fff;border:none;" title="Reativar cliente">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </button>`;
-            }
-
-            tr.innerHTML = `
-                <td>${escapeHTML(dados.nome_completo || '--')}</td>
-                <td style="font-size:var(--fonte-tamanho-xs);">${escapeHTML(dados.email || '--')}</td>
-                <td><span class="badge badge-${statusCliente}">${statusCliente}</span></td>
-                <td class="acoes">${botoesHtml}</td>
-            `;
-            tabelaClientesBody.appendChild(tr);
+            todosClientes.push({ id: docSnap.id, ...dados });
         });
 
-        // Event listeners para todos os botões de alteração de status
-        document.querySelectorAll('.btn-alterar-status').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const botao = e.currentTarget;
-                const clienteId = botao.dataset.id;
-                const nomeCliente = botao.dataset.nome;
-                const novoStatus = botao.dataset.novoStatus;
-
-                // Desabilitar botão para evitar duplo clique
-                botao.disabled = true;
-
-                try {
-                    await updateDoc(doc(db, 'clientes', clienteId), {
-                        status_conta: novoStatus
-                    });
-                    const labelsStatus = { 'ativa': 'ativado', 'inativa': 'inativado', 'excluida': 'excluído' };
-                    mostrarToast(`Cliente "${nomeCliente}" ${labelsStatus[novoStatus]} com sucesso!`, 'sucesso');
-                    await carregarClientes();
-                } catch (error) {
-                    console.error('Erro ao alterar status:', error);
-                    mostrarToast('Erro ao alterar status do cliente.', 'erro');
-                    botao.disabled = false;
-                }
-            });
-        });
-
-        // Event listeners: Editar cliente
-        document.querySelectorAll('.btn-editar-cliente').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const clienteId = e.currentTarget.dataset.id;
-                abrirModalEditarCliente(clienteId);
-            });
-        });
-
-        // Event listeners: Reenviar e-mail de redefinição de senha
-        document.querySelectorAll('.btn-reenviar-senha').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const clienteId = e.currentTarget.dataset.id;
-                const dados = clientesCache[clienteId];
-                if (!dados || !dados.email) {
-                    mostrarToast('E-mail do cliente não encontrado.', 'erro');
-                    return;
-                }
-                const botao = e.currentTarget;
-                botao.disabled = true;
-                try {
-                    await sendPasswordResetEmail(auth, dados.email);
-                    mostrarToast(`E-mail de redefinição enviado para ${escapeHTML(dados.email)}!`, 'sucesso');
-                } catch (error) {
-                    console.error('Erro ao reenviar e-mail:', error);
-                    mostrarToast('Erro ao reenviar e-mail de redefinição.', 'erro');
-                }
-                botao.disabled = false;
-            });
-        });
-
+        renderizarTabelaClientes(todosClientes);
+        atualizarPaineis();
     } catch (error) {
-        console.error('Erro ao carregar clientes:', error);
-        listaClientesVazia.innerHTML = '<p style="color:var(--cor-erro);">Erro ao carregar clientes.</p>';
     }
 }
+
+function getClientesFiltrados() {
+    const filtroNome = (filtroClientesNome.value || '').trim().toLowerCase();
+    const filtroStatus = filtroClientesStatus.value;
+    let lista = Object.entries(clientesCache).map(([id, dados]) => ({ id, ...dados }));
+    if (filtroNome) {
+        lista = lista.filter(c =>
+            (c.nome_completo || '').toLowerCase().includes(filtroNome) ||
+            (c.email || '').toLowerCase().includes(filtroNome) ||
+            (c.telefone || '').toLowerCase().includes(filtroNome) ||
+            (c.usuario || '').toLowerCase().includes(filtroNome)
+        );
+    }
+    if (filtroStatus) {
+        lista = lista.filter(c => c.status_conta === filtroStatus);
+    }
+    // Filtros rápidos
+    if (filtroRapidoAtivo && filtroRapidoAtivo !== 'todos') {
+        lista = lista.filter(c => {
+            const calc = calcularDiasRestantes(c.data_vencimento_cliente, c.hora_validade);
+            if (filtroRapidoAtivo === 'nao_expirados') return c.status_conta !== 'suspenso' && typeof calc.dias === 'number' && calc.dias > 0;
+            if (filtroRapidoAtivo === 'expirados') return typeof calc.dias === 'number' && calc.dias < 0;
+            if (filtroRapidoAtivo === 'suspensos') return c.status_conta === 'suspenso';
+            if (filtroRapidoAtivo === 'vencem_3dias') return c.status_conta !== 'suspenso' && typeof calc.dias === 'number' && calc.dias >= 0 && calc.dias <= 3;
+            return true;
+        });
+    }
+    return lista;
+}
+
+function renderizarTabelaClientes(todosClientesParam) {
+    const lista = todosClientesParam ? todosClientesParam : getClientesFiltrados();
+    const pageSize = parseInt(paginacaoClientesSize.value, 10);
+    const totalPaginas = Math.max(1, Math.ceil(lista.length / pageSize));
+    if (clientesPaginaAtual > totalPaginas) clientesPaginaAtual = totalPaginas;
+    const inicio = (clientesPaginaAtual - 1) * pageSize;
+    const paginados = lista.slice(inicio, inicio + pageSize);
+
+    tabelaClientesBody.innerHTML = '';
+
+    if (lista.length === 0) {
+        tabelaClientes.style.display = 'none';
+        paginacaoClientes.style.display = 'none';
+        listaClientesVazia.innerHTML = '<p>Nenhum cliente encontrado.</p>';
+        listaClientesVazia.style.display = 'block';
+        return;
+    }
+
+    listaClientesVazia.style.display = 'none';
+    tabelaClientes.style.display = 'table';
+    paginacaoClientes.style.display = 'flex';
+    paginacaoClientesInfo.textContent = `${inicio + 1}–${Math.min(inicio + pageSize, lista.length)} de ${lista.length}`;
+    pagClientesPagina.textContent = `${clientesPaginaAtual}/${totalPaginas}`;
+    pagClientesPrev.disabled = clientesPaginaAtual <= 1;
+    pagClientesNext.disabled = clientesPaginaAtual >= totalPaginas;
+
+    paginados.forEach((cliente) => {
+        const dados = cliente;
+        const docId = cliente.id;
+        const statusCliente = dados.status_conta || 'ativo';
+        const nomeCliente = escapeHTML(dados.nome_completo || dados.email);
+        const tr = document.createElement('tr');
+
+        let inlineHtml = `
+            <button class="btn btn-sm btn-editar-cliente" data-id="${docId}" style="background:var(--cor-primaria);color:#fff;border:none;" title="Editar cliente">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+            </button>`;
+
+        let menuHtml = `
+            <button class="acoes-menu-item btn-reenviar-senha" data-id="${docId}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                Reenviar Senha
+            </button>
+            <button class="acoes-menu-item btn-renovar" data-id="${docId}" data-dias="30" data-nome="${nomeCliente}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                Renovar +30 dias
+            </button>
+            <button class="acoes-menu-item btn-renovar" data-id="${docId}" data-dias="60" data-nome="${nomeCliente}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                Renovar +60 dias
+            </button>
+            <button class="acoes-menu-item btn-historico-cliente" data-id="${docId}" data-nome="${nomeCliente}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Histórico
+            </button>`;
+
+        if (statusCliente === 'ativo') {
+            inlineHtml += `
+                <button class="btn btn-sm btn-alterar-status" data-id="${docId}" data-nome="${nomeCliente}" data-novo-status="suspenso" style="background:var(--cor-pendente);color:#fff;border:none;" title="Suspender cliente">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                </button>`;
+            menuHtml += `
+                <button class="acoes-menu-item item-perigo btn-alterar-status" data-id="${docId}" data-nome="${nomeCliente}" data-novo-status="excluido">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Excluir
+                </button>`;
+        } else if (statusCliente === 'suspenso') {
+            inlineHtml += `
+                <button class="btn btn-sm btn-alterar-status" data-id="${docId}" data-nome="${nomeCliente}" data-novo-status="ativo" style="background:var(--cor-sucesso);color:#fff;border:none;" title="Ativar cliente">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>`;
+            menuHtml += `
+                <button class="acoes-menu-item item-perigo btn-alterar-status" data-id="${docId}" data-nome="${nomeCliente}" data-novo-status="excluido">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Excluir
+                </button>`;
+        } else {
+            inlineHtml += `
+                <button class="btn btn-sm btn-alterar-status" data-id="${docId}" data-nome="${nomeCliente}" data-novo-status="ativo" style="background:var(--cor-sucesso);color:#fff;border:none;" title="Reativar cliente">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>`;
+        }
+
+        const dotsSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg>';
+
+        // Indicador visual de situação
+        const calcSit = calcularDiasRestantes(dados.data_vencimento_cliente, dados.hora_validade);
+        let indicador = '';
+        let indicadorClasse = '';
+        if (statusCliente === 'suspenso') {
+            indicador = '⚫ Suspenso'; indicadorClasse = 'indicador-suspenso';
+        } else if (typeof calcSit.dias === 'number') {
+            if (calcSit.dias > 0) { indicador = '🟢 Não expirado'; indicadorClasse = 'indicador-ok'; }
+            else if (calcSit.dias === 0) { indicador = '🟡 Vence hoje'; indicadorClasse = 'indicador-alerta'; }
+            else { indicador = '🔴 Expirado'; indicadorClasse = 'indicador-expirado'; }
+        } else {
+            indicador = '--'; indicadorClasse = '';
+        }
+
+        // Botão WhatsApp Cobrar (apenas no menu de 3 pontos)
+        const telWhatsApp = formatarTelefoneWhatsApp(dados.telefone);
+        if (telWhatsApp) {
+            const calcWA = calcularDiasRestantes(dados.data_vencimento_cliente, dados.hora_validade);
+            const msgWhatsApp = whatsAppTemplate
+                .replace(/%nome%/g, dados.nome_completo || '')
+                .replace(/%data_vencimento%/g, dados.data_vencimento_cliente || '')
+                .replace(/%email%/g, dados.email || '')
+                .replace(/%telefone%/g, dados.telefone || '')
+                .replace(/%pacote%/g, dados.pacote || '')
+                .replace(/%usuario%/g, dados.usuario || '')
+                .replace(/%senha%/g, dados.senha_servico || '')
+                .replace(/%situacao%/g, calcWA.situacao || '')
+                .replace(/%dias_restantes%/g, String(calcWA.dias));
+            const whatsAppLink = `https://wa.me/${encodeURIComponent(telWhatsApp)}?text=${encodeURIComponent(msgWhatsApp)}`;
+            menuHtml += `
+                <a class="acoes-menu-item btn-whatsapp-cobrar" href="${whatsAppLink}" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;color:#25D366;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 0 0 .611.611l4.458-1.495A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.339 0-4.508-.758-6.262-2.044l-.438-.327-2.67.895.895-2.67-.327-.438A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                    Cobrar via WhatsApp
+                </a>`;
+        }
+
+        // Observação administrativa
+        const obsTexto = dados.observacao ? escapeHTML(dados.observacao) : '';
+        const obsHtml = obsTexto
+            ? `<span class="obs-icon" title="${obsTexto}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-primaria)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>`
+            : '<span class="obs-icon obs-vazio">--</span>';
+
+        tr.innerHTML = `
+            <td class="celula-truncada" title="${escapeHTML(dados.nome_completo || '--')}">${escapeHTML(dados.nome_completo || '--')}</td>
+            <td class="celula-truncada" style="font-size:var(--fonte-tamanho-xs);" title="${escapeHTML(dados.email || '--')}">${escapeHTML(dados.email || '--')}</td>
+            <td><span class="badge badge-${statusCliente}">${statusCliente}</span></td>
+            <td><span class="indicador-situacao ${indicadorClasse}">${indicador}</span></td>
+            <td class="td-obs">${obsHtml}</td>
+            <td class="acoes">
+                <div class="acoes-container">
+                    <div class="acoes-inline">${inlineHtml}</div>
+                    <button class="btn-mais-acoes" title="Mais ações">${dotsSvg}</button>
+                    <div class="acoes-menu">${menuHtml}</div>
+                </div>
+            </td>
+        `;
+        tabelaClientesBody.appendChild(tr);
+    });
+
+    // Event listeners
+    document.querySelectorAll('.btn-alterar-status').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const botao = e.currentTarget;
+            const clienteId = botao.dataset.id;
+            const nomeC = botao.dataset.nome;
+            const novoSt = botao.dataset.novoStatus;
+            botao.disabled = true;
+            try {
+                await updateDoc(doc(db, 'clientes', clienteId), { status_conta: novoSt });
+                const labelsStatus = { 'ativo': 'ativado', 'suspenso': 'suspenso', 'excluido': 'excluído' };
+                await registrarLog('cliente_status', `Cliente "${nomeC}" marcado como ${novoSt}`);
+                mostrarToast(`Cliente "${nomeC}" ${labelsStatus[novoSt]} com sucesso!`, 'sucesso');
+                await carregarClientes();
+            } catch (error) {
+                console.error('Erro ao alterar status:', error);
+                mostrarToast('Erro ao alterar status do cliente.', 'erro');
+                botao.disabled = false;
+            }
+        });
+    });
+
+    document.querySelectorAll('.btn-editar-cliente').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            abrirModalEditarCliente(e.currentTarget.dataset.id);
+        });
+    });
+
+    document.querySelectorAll('.btn-reenviar-senha').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const clienteId = e.currentTarget.dataset.id;
+            const dados = clientesCache[clienteId];
+            if (!dados || !dados.email) { mostrarToast('E-mail do cliente não encontrado.', 'erro'); return; }
+            const botao = e.currentTarget;
+            botao.disabled = true;
+            try {
+                await sendPasswordResetEmail(auth, dados.email);
+                mostrarToast(`E-mail de redefinição enviado para ${escapeHTML(dados.email)}!`, 'sucesso');
+            } catch (error) {
+                console.error('Erro ao reenviar e-mail:', error);
+                mostrarToast('Erro ao reenviar e-mail de redefinição.', 'erro');
+            }
+            botao.disabled = false;
+        });
+    });
+
+    // Renovação rápida (+30 / +60 dias)
+    document.querySelectorAll('.btn-renovar').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const botao = e.currentTarget;
+            const clienteId = botao.dataset.id;
+            const dias = parseInt(botao.dataset.dias, 10);
+            const nomeC = botao.dataset.nome;
+            const dados = clientesCache[clienteId];
+            if (!dados) { mostrarToast('Dados do cliente não encontrados.', 'erro'); return; }
+            botao.disabled = true;
+            try {
+                let dataBase = parseDateDDMMAAAA(dados.data_vencimento_cliente);
+                if (!dataBase) dataBase = new Date();
+                dataBase.setDate(dataBase.getDate() + dias);
+                const novaData = formatDateDDMMAAAA(dataBase);
+                const agora = new Date();
+                const horaAtual = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+                await updateDoc(doc(db, 'clientes', clienteId), {
+                    data_vencimento_cliente: novaData,
+                    hora_validade: horaAtual
+                });
+                clientesCache[clienteId].data_vencimento_cliente = novaData;
+                clientesCache[clienteId].hora_validade = horaAtual;
+                await registrarLog('cliente_renovado', `Cliente "${nomeC}" renovado +${dias} dias. Novo vencimento: ${novaData}`);
+                mostrarToast(`Cliente "${nomeC}" renovado +${dias} dias! Novo vencimento: ${novaData}`, 'sucesso');
+                await carregarClientes();
+            } catch (error) {
+                console.error('Erro ao renovar cliente:', error);
+                mostrarToast('Erro ao renovar cliente.', 'erro');
+                botao.disabled = false;
+            }
+        });
+    });
+
+    // Histórico de ações por cliente
+    document.querySelectorAll('.btn-historico-cliente').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const clienteId = e.currentTarget.dataset.id;
+            const nomeC = e.currentTarget.dataset.nome;
+            abrirModalHistoricoCliente(clienteId, nomeC);
+        });
+    });
+}
+
+// Filtros de clientes
+filtroClientesNome.addEventListener('input', () => { clientesPaginaAtual = 1; renderizarTabelaClientes(getClientesFiltrados()); });
+filtroClientesStatus.addEventListener('change', () => { clientesPaginaAtual = 1; renderizarTabelaClientes(getClientesFiltrados()); });
+
+// Filtros rápidos de clientes
+let filtroRapidoAtivo = 'todos';
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-filtro-rapido');
+    if (!btn) return;
+    document.querySelectorAll('.btn-filtro-rapido').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    filtroRapidoAtivo = btn.dataset.filtro;
+    filtroClientesStatus.value = '';
+    clientesPaginaAtual = 1;
+    renderizarTabelaClientes(getClientesFiltrados());
+});
+
+// Exportar clientes
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-exportar-clientes]');
+    if (btn) exportarClientes(btn.dataset.exportarClientes);
+    const btnLog = e.target.closest('[data-exportar-logs]');
+    if (btnLog) exportarLogs(btnLog.dataset.exportarLogs);
+});
+
+// Paginação de clientes
+paginacaoClientesSize.addEventListener('change', () => { clientesPaginaAtual = 1; renderizarTabelaClientes(getClientesFiltrados()); });
+pagClientesPrev.addEventListener('click', () => { if (clientesPaginaAtual > 1) { clientesPaginaAtual--; renderizarTabelaClientes(getClientesFiltrados()); } });
+pagClientesNext.addEventListener('click', () => { clientesPaginaAtual++; renderizarTabelaClientes(getClientesFiltrados()); });
 
 // ========================================
 // MENSAGENS PERSONALIZADAS (CRUD)
 // ========================================
-let mensagensLista = []; // Array local das mensagens
+let mensagensLista = [];
 
 async function carregarMensagens() {
     try {
@@ -634,7 +1336,6 @@ async function carregarMensagens() {
             const dados = docSnap.data();
             if (dados.lista && Array.isArray(dados.lista)) {
                 mensagensLista = dados.lista;
-                // Migrar mensagens antigas sem os campos ativa/ordem
                 mensagensLista.forEach((msg, i) => {
                     if (msg.ativa === undefined) { msg.ativa = true; precisaMigrar = true; }
                     if (msg.ordem === undefined) { msg.ordem = i + 1; precisaMigrar = true; }
@@ -643,7 +1344,7 @@ async function carregarMensagens() {
                 mensagensLista = [{
                     id: gerarIdMensagem(),
                     texto: dados.mensagem_usuario_excluido,
-                    destino: 'excluida',
+                    destino: 'excluido',
                     ativa: true,
                     ordem: 1,
                     criadoEm: new Date().toISOString()
@@ -655,7 +1356,6 @@ async function carregarMensagens() {
         } else {
             mensagensLista = [];
         }
-        // Ordenar por campo ordem
         mensagensLista.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
         if (precisaMigrar && mensagensLista.length > 0) {
             await setDoc(doc(db, 'configuracoes', 'mensagens'), { lista: mensagensLista });
@@ -670,6 +1370,36 @@ function gerarIdMensagem() {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
 }
 
+// Toggle para clientes específicos
+msgDestino.addEventListener('change', () => {
+    msgClientesAlvoGrupo.style.display = msgDestino.value === 'clientes_especificos' ? 'block' : 'none';
+    if (msgDestino.value === 'clientes_especificos') preencherCheckboxesClientes(msgClientesAlvo, []);
+});
+
+editarMsgDestino.addEventListener('change', () => {
+    editarMsgClientesAlvoGrupo.style.display = editarMsgDestino.value === 'clientes_especificos' ? 'block' : 'none';
+    if (editarMsgDestino.value === 'clientes_especificos') preencherCheckboxesClientes(editarMsgClientesAlvo, []);
+});
+
+function preencherCheckboxesClientes(container, selecionados) {
+    container.innerHTML = '';
+    const clientes = Object.entries(clientesCache);
+    if (clientes.length === 0) {
+        container.innerHTML = '<p style="font-size:var(--fonte-tamanho-xs);color:var(--cor-texto-claro);">Nenhum cliente cadastrado.</p>';
+        return;
+    }
+    clientes.forEach(([uid, dados]) => {
+        const label = document.createElement('label');
+        const checked = selecionados.includes(uid) ? 'checked' : '';
+        label.innerHTML = `<input type="checkbox" value="${uid}" ${checked}> ${escapeHTML(dados.nome_completo || dados.email)} <small style="color:var(--cor-texto-claro);">(${dados.email})</small>`;
+        container.appendChild(label);
+    });
+}
+
+function getClientesSelecionados(container) {
+    return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+}
+
 function renderizarListaMensagens() {
     if (!listaMensagensEl) return;
     listaMensagensEl.innerHTML = '';
@@ -679,8 +1409,8 @@ function renderizarListaMensagens() {
         return;
     }
 
-    const labelsDestino = { 'ativa': 'Ativo', 'inativa': 'Inativo', 'excluida': 'Excluído' };
-    const coresDestino = { 'ativa': 'var(--cor-sucesso)', 'inativa': 'var(--cor-pendente)', 'excluida': 'var(--cor-erro)' };
+    const labelsDestino = { 'ativo': 'Ativo', 'suspenso': 'Suspenso', 'excluido': 'Excluído', 'clientes_especificos': 'Específicos' };
+    const coresDestino = { 'ativo': 'var(--cor-sucesso)', 'suspenso': 'var(--cor-pendente)', 'excluido': 'var(--cor-erro)', 'clientes_especificos': 'var(--cor-primaria)' };
 
     mensagensLista.forEach((msg, index) => {
         const isAtiva = msg.ativa !== false;
@@ -690,6 +1420,13 @@ function renderizarListaMensagens() {
         const estiloAttr = estilosPreview.length > 0 ? ` style="${estilosPreview.join(';')}"` : '';
         const item = document.createElement('div');
         item.className = `lista-mensagens-item${!isAtiva ? ' msg-desativada' : ''}`;
+
+        let destinoLabel = labelsDestino[msg.destino] || msg.destino;
+        if (msg.destino === 'clientes_especificos' && msg.clientesAlvo && msg.clientesAlvo.length > 0) {
+            const nomes = msg.clientesAlvo.map(uid => clientesCache[uid]?.nome_completo || uid).slice(0, 3);
+            destinoLabel += `: ${nomes.join(', ')}${msg.clientesAlvo.length > 3 ? '...' : ''}`;
+        }
+
         item.innerHTML = `
             <div class="msg-ordem-controles">
                 <button class="btn-ordem btn-ordem-subir" data-msg-id="${msg.id}" ${index === 0 ? 'disabled' : ''} title="Subir">
@@ -702,34 +1439,41 @@ function renderizarListaMensagens() {
             </div>
             <div class="msg-conteudo">
                 <div class="msg-destino" style="color:${coresDestino[msg.destino] || 'var(--cor-texto-claro)'};">
-                    Para: ${labelsDestino[msg.destino] || msg.destino}
+                    Para: ${escapeHTML(destinoLabel)}
                     <span class="msg-status-badge ${isAtiva ? 'msg-badge-ativa' : 'msg-badge-desativada'}">${isAtiva ? 'Ativa' : 'Desativada'}</span>
                 </div>
                 ${msg.titulo ? `<div class="msg-titulo-preview">${escapeHTML(msg.titulo)}</div>` : ''}
                 <div class="msg-texto"${estiloAttr}>${msg.texto}</div>
             </div>
             <div class="msg-acoes">
-                <button class="btn-editar-msg" data-msg-id="${msg.id}" title="Editar mensagem">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-primaria)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
-                </button>
-                <button class="btn-toggle-msg" data-msg-id="${msg.id}" title="${isAtiva ? 'Desativar' : 'Ativar'} mensagem">
-                    ${isAtiva
-                        ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-pendente)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>'
-                        : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-sucesso)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="20 6 9 17 4 12"></polyline></svg>'
-                    }
-                </button>
-                <button class="btn-excluir-msg" data-msg-id="${msg.id}" title="Excluir mensagem">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
+                <div class="acoes-container">
+                    <div class="acoes-inline">
+                        <button class="btn-editar-msg" data-msg-id="${msg.id}" title="Editar mensagem">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-primaria)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+                        </button>
+                        <button class="btn-toggle-msg" data-msg-id="${msg.id}" title="${isAtiva ? 'Desativar' : 'Ativar'} mensagem">
+                            ${isAtiva
+                                ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-pendente)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>'
+                                : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-sucesso)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+                            }
+                        </button>
+                    </div>
+                    <button class="btn-mais-acoes" title="Mais ações">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg>
+                    </button>
+                    <div class="acoes-menu">
+                        <button class="acoes-menu-item item-perigo btn-excluir-msg" data-msg-id="${msg.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            Excluir
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
         listaMensagensEl.appendChild(item);
     });
 
-    // Event listeners: Toggle ativa/desativada
+    // Toggle
     listaMensagensEl.querySelectorAll('.btn-toggle-msg').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const msgId = e.currentTarget.dataset.msgId;
@@ -747,7 +1491,7 @@ function renderizarListaMensagens() {
         });
     });
 
-    // Event listeners: Reordenar (subir)
+    // Subir
     listaMensagensEl.querySelectorAll('.btn-ordem-subir').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const msgId = e.currentTarget.dataset.msgId;
@@ -765,7 +1509,7 @@ function renderizarListaMensagens() {
         });
     });
 
-    // Event listeners: Reordenar (descer)
+    // Descer
     listaMensagensEl.querySelectorAll('.btn-ordem-descer').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const msgId = e.currentTarget.dataset.msgId;
@@ -783,15 +1527,14 @@ function renderizarListaMensagens() {
         });
     });
 
-    // Event listeners: Editar
+    // Editar
     listaMensagensEl.querySelectorAll('.btn-editar-msg').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const msgId = e.currentTarget.dataset.msgId;
-            abrirModalEditarMensagem(msgId);
+            abrirModalEditarMensagem(e.currentTarget.dataset.msgId);
         });
     });
 
-    // Event listeners: Excluir
+    // Excluir
     listaMensagensEl.querySelectorAll('.btn-excluir-msg').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const msgId = e.currentTarget.dataset.msgId;
@@ -801,6 +1544,7 @@ function renderizarListaMensagens() {
                 recalcularOrdem();
                 try {
                     await setDoc(doc(db, 'configuracoes', 'mensagens'), { lista: mensagensLista });
+                    await registrarLog('mensagem_excluida', 'Mensagem excluída');
                     mostrarToast('Mensagem excluída.', 'sucesso');
                     renderizarListaMensagens();
                 } catch (error) {
@@ -817,25 +1561,27 @@ function recalcularOrdem() {
 }
 
 // Formatação por seleção (criação) - execCommand
-msgNegritoBotao.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    document.execCommand('bold');
-});
-msgItalicoBotao.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    document.execCommand('italic');
-});
-// Cor do texto por seleção (criação)
+msgNegritoBotao.addEventListener('mousedown', (e) => { e.preventDefault(); document.execCommand('bold'); });
+msgItalicoBotao.addEventListener('mousedown', (e) => { e.preventDefault(); document.execCommand('italic'); });
 msgCorTexto.addEventListener('mousedown', salvarSelecao);
-msgCorTexto.addEventListener('input', () => {
-    restaurarSelecao();
-    document.execCommand('foreColor', false, msgCorTexto.value);
-});
-// Fonte por seleção (criação)
+msgCorTexto.addEventListener('input', () => { restaurarSelecao(); document.execCommand('foreColor', false, msgCorTexto.value); });
 msgFonte.addEventListener('mousedown', salvarSelecao);
-msgFonte.addEventListener('change', () => {
-    restaurarSelecao();
-    document.execCommand('fontName', false, msgFonte.value);
+msgFonte.addEventListener('change', () => { restaurarSelecao(); document.execCommand('fontName', false, msgFonte.value); });
+
+// Alinhamento (criação)
+document.querySelectorAll('.btn-align-cmd').forEach(btn => {
+    btn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        document.execCommand(btn.dataset.cmd);
+    });
+});
+
+// Alinhamento (edição)
+document.querySelectorAll('.btn-align-cmd-edit').forEach(btn => {
+    btn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        document.execCommand(btn.dataset.cmd);
+    });
 });
 
 btnSalvarMensagens.addEventListener('click', async () => {
@@ -864,16 +1610,30 @@ btnSalvarMensagens.addEventListener('click', async () => {
             corFundo: msgCorFundo.value,
             fonte: msgFonte.value
         };
+
+        if (destino === 'clientes_especificos') {
+            novaMensagem.clientesAlvo = getClientesSelecionados(msgClientesAlvo);
+            if (novaMensagem.clientesAlvo.length === 0) {
+                mostrarToast('Selecione pelo menos um cliente.', 'erro');
+                btnSalvarMensagens.disabled = false;
+                btnSalvarMsgTexto.style.display = 'inline';
+                btnSalvarMsgSpinner.style.display = 'none';
+                return;
+            }
+        }
+
         mensagensLista.push(novaMensagem);
 
         await setDoc(doc(db, 'configuracoes', 'mensagens'), { lista: mensagensLista });
+        await registrarLog('mensagem_criada', `Mensagem criada para ${destino}`);
         mostrarToast('Mensagem salva com sucesso!', 'sucesso');
-        // Limpar formulário de mensagem
         msgTexto.innerHTML = '';
         msgTitulo.value = '';
         msgCorTexto.value = '#333333';
         msgCorFundo.value = '#ffffff';
         msgFonte.value = 'Inter';
+        msgDestino.value = 'excluido';
+        msgClientesAlvoGrupo.style.display = 'none';
         renderizarListaMensagens();
     } catch (error) {
         console.error('Erro ao salvar mensagem:', error);
@@ -886,175 +1646,414 @@ btnSalvarMensagens.addEventListener('click', async () => {
 });
 
 // ========================================
-// CARREGAR FATURAS (com edição de status)
+// CARREGAR FATURAS (com filtro + paginação)
 // ========================================
 async function carregarFaturas() {
     try {
         const faturasRef = collection(db, 'faturas');
-        const q = query(faturasRef, orderBy('data_geracao', 'desc'), limit(20));
+        const q = query(faturasRef, orderBy('data_geracao', 'desc'));
         const snap = await getDocs(q);
 
-        tabelaFaturasBody.innerHTML = '';
-
-        if (snap.empty) {
-            tabelaFaturas.style.display = 'none';
-            listaFaturasVazia.innerHTML = '<p>Nenhuma fatura cadastrada.</p>';
-            listaFaturasVazia.style.display = 'block';
-            return;
-        }
-
-        listaFaturasVazia.style.display = 'none';
-        tabelaFaturas.style.display = 'table';
+        faturasCache = {};
+        allFaturasDocs = [];
 
         snap.forEach((docSnap) => {
             const dados = docSnap.data();
             faturasCache[docSnap.id] = dados;
-            const dadosCliente = clientesCache[dados.id_cliente];
-            const nomeCliente = dadosCliente?.nome_completo || dadosCliente?.email || dados.id_cliente;
-            const statusAtual = dados.status_pagamento || 'pendente';
-            const isPendente = statusAtual === 'pendente';
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="font-size:var(--fonte-tamanho-xs);">${escapeHTML(nomeCliente)}</td>
-                <td>${escapeHTML(dados.mes_referencia || '--')}</td>
-                <td><span class="badge badge-${statusAtual}">${statusAtual}</span></td>
-                <td class="acoes">
-                    <button class="btn btn-sm btn-editar-fatura" data-id="${docSnap.id}" style="background:var(--cor-primaria);color:#fff;border:none;" title="Editar fatura">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
-                    </button>
-                    ${dados.url_pdf_cloudinary
-                        ? `<a href="${escapeHTML(dados.url_pdf_cloudinary)}" target="_blank" class="btn btn-secundario btn-sm">PDF</a>`
-                        : ''
-                    }
-                    ${isPendente
-                        ? `<button class="btn btn-sm btn-marcar-pago" data-id="${docSnap.id}" style="background:var(--cor-sucesso);color:#fff;border:none;" title="Marcar como Pago">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                           </button>`
-                        : `<button class="btn btn-sm btn-marcar-pendente" data-id="${docSnap.id}" style="background:var(--cor-pendente);color:#fff;border:none;" title="Marcar como Pendente">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
-                           </button>`
-                    }
-                    <button class="btn btn-perigo btn-sm btn-deletar-fatura" data-id="${docSnap.id}" title="Excluir fatura">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
-                </td>
-            `;
-            tabelaFaturasBody.appendChild(tr);
+            allFaturasDocs.push({ id: docSnap.id, ...dados });
         });
 
-        // Event listeners: Marcar como PAGO
-        document.querySelectorAll('.btn-marcar-pago').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const faturaId = e.currentTarget.dataset.id;
-                try {
-                    await updateDoc(doc(db, 'faturas', faturaId), {
-                        status_pagamento: 'pago'
-                    });
-                    mostrarToast('Fatura marcada como PAGO!', 'sucesso');
-                    await carregarFaturas();
-                } catch (error) {
-                    console.error('Erro ao atualizar:', error);
-                    mostrarToast('Erro ao atualizar status.', 'erro');
-                }
-            });
-        });
-
-        // Event listeners: Marcar como PENDENTE
-        document.querySelectorAll('.btn-marcar-pendente').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const faturaId = e.currentTarget.dataset.id;
-                try {
-                    await updateDoc(doc(db, 'faturas', faturaId), {
-                        status_pagamento: 'pendente'
-                    });
-                    mostrarToast('Fatura marcada como PENDENTE.', 'info');
-                    await carregarFaturas();
-                } catch (error) {
-                    console.error('Erro ao atualizar:', error);
-                    mostrarToast('Erro ao atualizar status.', 'erro');
-                }
-            });
-        });
-
-        // Event listeners: Deletar
-        document.querySelectorAll('.btn-deletar-fatura').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const faturaId = e.currentTarget.dataset.id;
-                const confirmou = await confirmarAcao('Tem certeza que deseja excluir esta fatura?');
-                if (confirmou) {
-                    try {
-                        await deleteDoc(doc(db, 'faturas', faturaId));
-                        mostrarToast('Fatura excluída.', 'sucesso');
-                        await carregarFaturas();
-                    } catch (error) {
-                        console.error('Erro ao excluir:', error);
-                        mostrarToast('Erro ao excluir fatura.', 'erro');
-                    }
-                }
-            });
-        });
-
-        // Event listeners: Editar fatura
-        document.querySelectorAll('.btn-editar-fatura').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const faturaId = e.currentTarget.dataset.id;
-                abrirModalEditarFatura(faturaId);
-            });
-        });
-
+        renderizarTabelaFaturas();
     } catch (error) {
         console.error('Erro ao carregar faturas:', error);
         listaFaturasVazia.innerHTML = '<p style="color:var(--cor-erro);">Erro ao carregar faturas.</p>';
     }
 }
 
+function getFaturasFiltradas() {
+    const filtroCliente = (filtroFaturasCliente.value || '').trim().toLowerCase();
+    const filtroRef = (filtroFaturasRef.value || '').trim().toLowerCase();
+    const filtroStatus = filtroFaturasStatus.value;
+    let lista = [...allFaturasDocs];
+
+    if (filtroCliente) {
+        lista = lista.filter(f => {
+            const dados = clientesCache[f.id_cliente];
+            const nome = (dados?.nome_completo || '').toLowerCase();
+            const email = (dados?.email || '').toLowerCase();
+            return nome.includes(filtroCliente) || email.includes(filtroCliente);
+        });
+    }
+    if (filtroRef) {
+        lista = lista.filter(f => (f.mes_referencia || '').toLowerCase().includes(filtroRef));
+    }
+    if (filtroStatus) {
+        lista = lista.filter(f => f.status_pagamento === filtroStatus);
+    }
+    return lista;
+}
+
+function renderizarTabelaFaturas() {
+    const lista = getFaturasFiltradas();
+    const pageSize = parseInt(paginacaoFaturasSize.value, 10);
+    const totalPaginas = Math.max(1, Math.ceil(lista.length / pageSize));
+    if (faturasPaginaAtual > totalPaginas) faturasPaginaAtual = totalPaginas;
+    const inicio = (faturasPaginaAtual - 1) * pageSize;
+    const paginados = lista.slice(inicio, inicio + pageSize);
+
+    tabelaFaturasBody.innerHTML = '';
+
+    if (lista.length === 0) {
+        tabelaFaturas.style.display = 'none';
+        paginacaoFaturas.style.display = 'none';
+        listaFaturasVazia.innerHTML = '<p>Nenhuma fatura encontrada.</p>';
+        listaFaturasVazia.style.display = 'block';
+        return;
+    }
+
+    listaFaturasVazia.style.display = 'none';
+    tabelaFaturas.style.display = 'table';
+    paginacaoFaturas.style.display = 'flex';
+    paginacaoFaturasInfo.textContent = `${inicio + 1}–${Math.min(inicio + pageSize, lista.length)} de ${lista.length}`;
+    pagFaturasPagina.textContent = `${faturasPaginaAtual}/${totalPaginas}`;
+    pagFaturasPrev.disabled = faturasPaginaAtual <= 1;
+    pagFaturasNext.disabled = faturasPaginaAtual >= totalPaginas;
+
+    paginados.forEach((fatura) => {
+        const dados = fatura;
+        const docId = fatura.id;
+        const dadosCliente = clientesCache[dados.id_cliente];
+        const nomeCliente = dadosCliente?.nome_completo || dadosCliente?.email || dados.id_cliente;
+        const statusAtual = dados.status_pagamento || 'pendente';
+        const isPendente = statusAtual === 'pendente';
+
+        const tr = document.createElement('tr');
+
+        let inlineHtml = `
+            <button class="btn btn-sm btn-editar-fatura" data-id="${docId}" style="background:var(--cor-primaria);color:#fff;border:none;" title="Editar fatura">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+            </button>`;
+
+        if (dados.url_pdf_cloudinary) {
+            inlineHtml += `<a href="${escapeHTML(dados.url_pdf_cloudinary)}" target="_blank" rel="noopener noreferrer" class="btn btn-secundario btn-sm">PDF</a>`;
+        }
+
+        if (isPendente) {
+            inlineHtml += `
+                <button class="btn btn-sm btn-marcar-pago" data-id="${docId}" style="background:var(--cor-sucesso);color:#fff;border:none;" title="Marcar como Pago">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>`;
+        } else {
+            inlineHtml += `
+                <button class="btn btn-sm btn-marcar-pendente" data-id="${docId}" style="background:var(--cor-pendente);color:#fff;border:none;" title="Marcar como Pendente">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </button>`;
+        }
+
+        const menuHtml = `
+            <button class="acoes-menu-item item-perigo btn-deletar-fatura" data-id="${docId}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Excluir
+            </button>`;
+
+        const dotsSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg>';
+
+        tr.innerHTML = `
+            <td class="celula-truncada" style="font-size:var(--fonte-tamanho-xs);" title="${escapeHTML(nomeCliente)}">${escapeHTML(nomeCliente)}</td>
+            <td>${escapeHTML(dados.mes_referencia || '--')}</td>
+            <td><span class="badge badge-${statusAtual}">${statusAtual}</span></td>
+            <td class="acoes">
+                <div class="acoes-container">
+                    <div class="acoes-inline">${inlineHtml}</div>
+                    <button class="btn-mais-acoes" title="Mais ações">${dotsSvg}</button>
+                    <div class="acoes-menu">${menuHtml}</div>
+                </div>
+            </td>
+        `;
+        tabelaFaturasBody.appendChild(tr);
+    });
+
+    // Marcar como PAGO (com verificação de expiração)
+    document.querySelectorAll('.btn-marcar-pago').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const faturaId = e.currentTarget.dataset.id;
+            const fatura = faturasCache[faturaId];
+            try {
+                // Verificar se o cliente está expirado
+                let clienteExpirado = false;
+                if (fatura && fatura.id_cliente) {
+                    const clienteData = clientesCache[fatura.id_cliente];
+                    if (clienteData && clienteData.data_vencimento_cliente) {
+                        const dataVencAtual = parseDateDDMMAAAA(clienteData.data_vencimento_cliente);
+                        if (dataVencAtual) {
+                            if (clienteData.hora_validade) {
+                                const partes = clienteData.hora_validade.split(':');
+                                dataVencAtual.setHours(parseInt(partes[0], 10) || 0, parseInt(partes[1], 10) || 0, 0, 0);
+                            } else {
+                                dataVencAtual.setHours(23, 59, 59, 999);
+                            }
+                            clienteExpirado = dataVencAtual.getTime() <= Date.now();
+                        }
+                    }
+                }
+
+                if (clienteExpirado) {
+                    // Cliente expirado: pedir nova data de vencimento via modal
+                    const novaDataInfo = await pedirNovaDataVencimento();
+                    if (!novaDataInfo) return; // Cancelou
+
+                    await updateDoc(doc(db, 'faturas', faturaId), { status_pagamento: 'pago' });
+
+                    await updateDoc(doc(db, 'clientes', fatura.id_cliente), {
+                        data_vencimento_cliente: novaDataInfo.data,
+                        hora_validade: novaDataInfo.hora
+                    });
+                    clientesCache[fatura.id_cliente].data_vencimento_cliente = novaDataInfo.data;
+                    clientesCache[fatura.id_cliente].hora_validade = novaDataInfo.hora;
+
+                    await registrarLog('fatura_pago', `Fatura ${fatura?.mes_referencia || faturaId} marcada como PAGO (cliente expirado, novo vencimento: ${novaDataInfo.data} ${novaDataInfo.hora})`);
+                    mostrarToast('Fatura marcada como PAGO! Novo vencimento definido.', 'sucesso');
+                } else {
+                    // Cliente NÃO expirado: auto-renovação +30 dias
+                    await updateDoc(doc(db, 'faturas', faturaId), { status_pagamento: 'pago' });
+
+                    if (fatura && fatura.id_cliente) {
+                        const clienteData = clientesCache[fatura.id_cliente];
+                        if (clienteData && clienteData.data_vencimento_cliente) {
+                            const dataVencAtual = parseDateDDMMAAAA(clienteData.data_vencimento_cliente);
+                            if (dataVencAtual) {
+                                dataVencAtual.setDate(dataVencAtual.getDate() + 30);
+                                const novaData = formatDateDDMMAAAA(dataVencAtual);
+                                const agora = new Date();
+                                const horaAtual = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+                                await updateDoc(doc(db, 'clientes', fatura.id_cliente), {
+                                    data_vencimento_cliente: novaData,
+                                    hora_validade: horaAtual
+                                });
+                                clientesCache[fatura.id_cliente].data_vencimento_cliente = novaData;
+                                clientesCache[fatura.id_cliente].hora_validade = horaAtual;
+                            }
+                        }
+                    }
+
+                    await registrarLog('fatura_pago', `Fatura ${fatura?.mes_referencia || faturaId} marcada como PAGO`);
+                    mostrarToast('Fatura marcada como PAGO! Vencimento do cliente renovado.', 'sucesso');
+                }
+
+                incrementarFaturasPagas();
+                await carregarFaturas();
+            } catch (error) {
+                console.error('Erro ao atualizar:', error);
+                mostrarToast('Erro ao atualizar status.', 'erro');
+            }
+        });
+    });
+
+    // Marcar como PENDENTE (requer motivo)
+    document.querySelectorAll('.btn-marcar-pendente').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const faturaId = e.currentTarget.dataset.id;
+            const motivo = await pedirMotivo();
+            if (!motivo) return;
+
+            try {
+                await updateDoc(doc(db, 'faturas', faturaId), {
+                    status_pagamento: 'pendente',
+                    motivo_reversao: motivo
+                });
+                const fatura = faturasCache[faturaId];
+                await registrarLog('fatura_pendente', `Fatura ${fatura?.mes_referencia || faturaId} revertida para PENDENTE. Motivo: ${motivo}`);
+                mostrarToast('Fatura marcada como PENDENTE.', 'info');
+                decrementarFaturasPagas();
+                await carregarFaturas();
+            } catch (error) {
+                console.error('Erro ao atualizar:', error);
+                mostrarToast('Erro ao atualizar status.', 'erro');
+            }
+        });
+    });
+
+    // Deletar
+    document.querySelectorAll('.btn-deletar-fatura').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const faturaId = e.currentTarget.dataset.id;
+            const confirmou = await confirmarAcao('Tem certeza que deseja excluir esta fatura?');
+            if (confirmou) {
+                try {
+                    const fatura = faturasCache[faturaId];
+                    await deleteDoc(doc(db, 'faturas', faturaId));
+                    await registrarLog('fatura_excluida', `Fatura ${fatura?.mes_referencia || faturaId} excluída`);
+                    mostrarToast('Fatura excluída.', 'sucesso');
+                    await carregarFaturas();
+                } catch (error) {
+                    console.error('Erro ao excluir:', error);
+                    mostrarToast('Erro ao excluir fatura.', 'erro');
+                }
+            }
+        });
+    });
+
+    // Editar fatura
+    document.querySelectorAll('.btn-editar-fatura').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            abrirModalEditarFatura(e.currentTarget.dataset.id);
+        });
+    });
+}
+
+// Filtros de faturas
+filtroFaturasCliente.addEventListener('input', () => { faturasPaginaAtual = 1; renderizarTabelaFaturas(); });
+filtroFaturasRef.addEventListener('input', () => { faturasPaginaAtual = 1; renderizarTabelaFaturas(); });
+filtroFaturasStatus.addEventListener('change', () => { faturasPaginaAtual = 1; renderizarTabelaFaturas(); });
+
+// Paginação de faturas
+paginacaoFaturasSize.addEventListener('change', () => { faturasPaginaAtual = 1; renderizarTabelaFaturas(); });
+pagFaturasPrev.addEventListener('click', () => { if (faturasPaginaAtual > 1) { faturasPaginaAtual--; renderizarTabelaFaturas(); } });
+pagFaturasNext.addEventListener('click', () => { faturasPaginaAtual++; renderizarTabelaFaturas(); });
+
+// ========================================
+// MODAL MOTIVO DA REVERSÃO
+// ========================================
+function pedirMotivo() {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('modal-motivo');
+        const textarea = document.getElementById('motivo-reversao');
+        const btnConfirmar = document.getElementById('btn-motivo-confirmar');
+        const btnCancelar = document.getElementById('btn-motivo-cancelar');
+        const btnFechar = document.getElementById('btn-fechar-modal-motivo');
+
+        textarea.value = '';
+        overlay.style.display = 'flex';
+
+        function limpar() {
+            overlay.style.display = 'none';
+            btnConfirmar.removeEventListener('click', confirmar);
+            btnCancelar.removeEventListener('click', cancelar);
+            btnFechar.removeEventListener('click', cancelar);
+            overlay.removeEventListener('click', clickOverlay);
+        }
+
+        function confirmar() {
+            const motivo = textarea.value.trim();
+            if (!motivo) { mostrarToast('Informe o motivo da reversão.', 'erro'); return; }
+            limpar();
+            resolve(motivo);
+        }
+        function cancelar() { limpar(); resolve(null); }
+        function clickOverlay(e) { if (e.target === overlay) cancelar(); }
+
+        btnConfirmar.addEventListener('click', confirmar);
+        btnCancelar.addEventListener('click', cancelar);
+        btnFechar.addEventListener('click', cancelar);
+        overlay.addEventListener('click', clickOverlay);
+    });
+}
+
+// ========================================
+// MODAL NOVA DATA DE VENCIMENTO (cliente expirado)
+// ========================================
+function pedirNovaDataVencimento() {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('modal-nova-data-vencimento');
+        const inputData = document.getElementById('nova-data-venc-input');
+        const inputHora = document.getElementById('nova-hora-venc-input');
+        const btnConfirmar = document.getElementById('btn-nova-data-confirmar');
+        const btnCancelar = document.getElementById('btn-nova-data-cancelar');
+        const btnFechar = document.getElementById('btn-fechar-modal-nova-data');
+
+        inputData.value = '';
+        inputHora.value = '';
+        overlay.style.display = 'flex';
+
+        function limpar() {
+            overlay.style.display = 'none';
+            btnConfirmar.removeEventListener('click', confirmar);
+            btnCancelar.removeEventListener('click', cancelar);
+            btnFechar.removeEventListener('click', cancelar);
+            overlay.removeEventListener('click', clickOverlay);
+        }
+
+        function confirmar() {
+            const data = inputData.value.trim();
+            const hora = inputHora.value.trim();
+            if (!data) { mostrarToast('Informe a nova data de vencimento.', 'erro'); return; }
+            if (!hora) { mostrarToast('Informe a hora de validade.', 'erro'); return; }
+            const dataObj = parseDateDDMMAAAA(data);
+            if (!dataObj) { mostrarToast('Data inválida. Use o formato DD/MM/AAAA.', 'erro'); return; }
+            limpar();
+            resolve({ data, hora });
+        }
+        function cancelar() { limpar(); resolve(null); }
+        function clickOverlay(e) { if (e.target === overlay) cancelar(); }
+
+        btnConfirmar.addEventListener('click', confirmar);
+        btnCancelar.addEventListener('click', cancelar);
+        btnFechar.addEventListener('click', cancelar);
+        overlay.addEventListener('click', clickOverlay);
+    });
+}
+
 // ========================================
 // EDIÇÃO DE CLIENTES (Modal)
 // ========================================
-
 function abrirModalEditarCliente(clienteId) {
     const dados = clientesCache[clienteId];
-    if (!dados) {
-        mostrarToast('Dados do cliente não encontrados.', 'erro');
-        return;
-    }
+    if (!dados) { mostrarToast('Dados do cliente não encontrados.', 'erro'); return; }
     editarClienteId.value = clienteId;
     editarClienteNome.value = dados.nome_completo || '';
     editarClienteEmail.value = dados.email || '';
-    editarClienteStatus.value = dados.status_conta || 'ativa';
+    editarClienteStatus.value = dados.status_conta || 'ativo';
+    editarClienteUsuario.value = dados.usuario || '';
+    editarClienteSenhaServico.value = dados.senha_servico || '';
+    editarClienteDataVencimento.value = dados.data_vencimento_cliente || '';
+    editarClienteHoraValidade.value = dados.hora_validade || '';
+    editarClienteTelefone.value = dados.telefone || '';
+    editarClientePacote.value = dados.pacote || '';
+    editarClienteObservacao.value = dados.observacao || '';
+    editarClienteCpf.value = dados.cpf || '';
+    const end = dados.dados_endereco || {};
+    editarClienteCep.value = end.cep || '';
+    editarClienteEndereco.value = end.endereco || '';
+    editarClienteNumero.value = end.numero || '';
+    editarClienteComplemento.value = end.complemento || '';
+    editarClienteBairro.value = end.bairro || '';
+    editarClienteCidade.value = end.cidade || '';
+    editarClienteEstado.value = end.estado || '';
+    autoCalcDataVencimento(editarClienteDataVencimento, editarClienteHoraValidade, editarClienteDiasRestantes, editarClienteSituacao);
+
+    // Verificar se o cliente tem fatura com status "pago" — bloquear vencimento/hora
+    let temFaturaPaga = false;
+    allFaturasDocs.forEach(f => {
+        if (f.id_cliente === clienteId && f.status_pagamento === 'pago') {
+            temFaturaPaga = true;
+        }
+    });
+
+    editarClienteDataVencimento.disabled = temFaturaPaga;
+    editarClienteHoraValidade.disabled = temFaturaPaga;
+    editarClienteDataVencimento.style.opacity = temFaturaPaga ? '0.5' : '1';
+    editarClienteHoraValidade.style.opacity = temFaturaPaga ? '0.5' : '1';
+    if (avisoVencBloqueado) {
+        avisoVencBloqueado.style.display = temFaturaPaga ? 'block' : 'none';
+    }
+
     modalEditarCliente.style.display = 'flex';
 }
 
 function fecharModalEditarCliente() {
     modalEditarCliente.style.display = 'none';
     editarClienteId.value = '';
-    editarClienteNome.value = '';
-    editarClienteEmail.value = '';
 }
 
 btnFecharModalCliente.addEventListener('click', fecharModalEditarCliente);
-modalEditarCliente.addEventListener('click', (e) => {
-    if (e.target === modalEditarCliente) fecharModalEditarCliente();
-});
+modalEditarCliente.addEventListener('click', (e) => { if (e.target === modalEditarCliente) fecharModalEditarCliente(); });
 
 btnSalvarEdicaoCliente.addEventListener('click', async () => {
     const clienteId = editarClienteId.value;
     const nome = editarClienteNome.value.trim();
     const status = editarClienteStatus.value;
 
-    if (!nome) {
-        mostrarToast('Informe o nome do cliente.', 'erro');
-        return;
-    }
+    if (!nome) { mostrarToast('Informe o nome do cliente.', 'erro'); return; }
 
     btnSalvarEdicaoCliente.disabled = true;
     btnSalvarEdicaoClienteTexto.style.display = 'none';
@@ -1063,12 +2062,31 @@ btnSalvarEdicaoCliente.addEventListener('click', async () => {
     try {
         await updateDoc(doc(db, 'clientes', clienteId), {
             nome_completo: nome,
-            status_conta: status
+            status_conta: status,
+            cpf: editarClienteCpf.value.trim(),
+            usuario: editarClienteUsuario.value.trim(),
+            senha_servico: editarClienteSenhaServico.value.trim(),
+            data_vencimento_cliente: editarClienteDataVencimento.value.trim(),
+            hora_validade: editarClienteHoraValidade.value.trim(),
+            telefone: editarClienteTelefone.value.trim(),
+            pacote: editarClientePacote.value.trim(),
+            observacao: editarClienteObservacao.value.trim(),
+            dados_endereco: {
+                cep: editarClienteCep.value.trim(),
+                endereco: editarClienteEndereco.value.trim(),
+                numero: editarClienteNumero.value.trim(),
+                complemento: editarClienteComplemento.value.trim(),
+                bairro: editarClienteBairro.value.trim(),
+                cidade: editarClienteCidade.value.trim(),
+                estado: editarClienteEstado.value.trim()
+            }
         });
+
+        await registrarLog('cliente_editado', `Cliente "${nome}" editado`);
         mostrarToast('Cliente atualizado com sucesso!', 'sucesso');
         fecharModalEditarCliente();
         await carregarClientes();
-        await carregarFaturas(); // Atualizar nomes nas faturas
+        await carregarFaturas();
     } catch (error) {
         console.error('Erro ao atualizar cliente:', error);
         mostrarToast('Erro ao atualizar cliente.', 'erro');
@@ -1082,18 +2100,10 @@ btnSalvarEdicaoCliente.addEventListener('click', async () => {
 // ========================================
 // EDIÇÃO DE FATURAS (Modal)
 // ========================================
-
-// Upload area para edição de fatura
 editarUploadArea.addEventListener('click', () => editarInputPdf.click());
 
-editarUploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    editarUploadArea.classList.add('arrastando');
-});
-
-editarUploadArea.addEventListener('dragleave', () => {
-    editarUploadArea.classList.remove('arrastando');
-});
+editarUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); editarUploadArea.classList.add('arrastando'); });
+editarUploadArea.addEventListener('dragleave', () => { editarUploadArea.classList.remove('arrastando'); });
 
 editarUploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
@@ -1118,10 +2128,7 @@ editarInputPdf.addEventListener('change', (e) => {
 
 function abrirModalEditarFatura(faturaId) {
     const dados = faturasCache[faturaId];
-    if (!dados) {
-        mostrarToast('Dados da fatura não encontrados.', 'erro');
-        return;
-    }
+    if (!dados) { mostrarToast('Dados da fatura não encontrados.', 'erro'); return; }
     const dadosCliente = clientesCache[dados.id_cliente];
     const nomeCliente = dadosCliente?.nome_completo || dadosCliente?.email || dados.id_cliente;
 
@@ -1148,9 +2155,7 @@ function fecharModalEditarFatura() {
 }
 
 btnFecharModalFatura.addEventListener('click', fecharModalEditarFatura);
-modalEditarFatura.addEventListener('click', (e) => {
-    if (e.target === modalEditarFatura) fecharModalEditarFatura();
-});
+modalEditarFatura.addEventListener('click', (e) => { if (e.target === modalEditarFatura) fecharModalEditarFatura(); });
 
 btnSalvarEdicaoFatura.addEventListener('click', async () => {
     const faturaId = editarFaturaId.value;
@@ -1159,18 +2164,9 @@ btnSalvarEdicaoFatura.addEventListener('click', async () => {
     const codigoPix = editarFaturaPix.value.trim();
     const status = editarFaturaStatus.value;
 
-    if (!mesRef) {
-        mostrarToast('Informe o mês de referência.', 'erro');
-        return;
-    }
-    if (!dataVenc) {
-        mostrarToast('Informe a data de vencimento.', 'erro');
-        return;
-    }
-    if (!codigoPix) {
-        mostrarToast('Informe o código PIX.', 'erro');
-        return;
-    }
+    if (!mesRef) { mostrarToast('Informe o mês de referência.', 'erro'); return; }
+    if (!dataVenc) { mostrarToast('Informe a data de vencimento.', 'erro'); return; }
+    if (!codigoPix) { mostrarToast('Informe o código PIX.', 'erro'); return; }
 
     btnSalvarEdicaoFatura.disabled = true;
     btnSalvarEdicaoFaturaTexto.style.display = 'none';
@@ -1179,7 +2175,6 @@ btnSalvarEdicaoFatura.addEventListener('click', async () => {
     try {
         let urlPdf = editarFaturaUrlPdf.value.trim();
 
-        // Se tem novo PDF selecionado, fazer upload
         if (editarPdfSelecionado) {
             try {
                 urlPdf = await uploadParaCloudinary(editarPdfSelecionado);
@@ -1210,6 +2205,29 @@ btnSalvarEdicaoFatura.addEventListener('click', async () => {
             status_pagamento: status
         });
 
+        // Sync: se status for "pago", sincronizar data_vencimento da fatura com data_vencimento_cliente
+        if (status === 'pago') {
+            const faturaData = faturasCache[faturaId];
+            if (faturaData && faturaData.id_cliente) {
+                // Converter data_vencimento (yyyy-mm-dd) para DD/MM/AAAA
+                const partes = dataVenc.split('-');
+                if (partes.length === 3) {
+                    const novaDataCliente = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                    const agora = new Date();
+                    const horaAtual = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+                    await updateDoc(doc(db, 'clientes', faturaData.id_cliente), {
+                        data_vencimento_cliente: novaDataCliente,
+                        hora_validade: horaAtual
+                    });
+                    if (clientesCache[faturaData.id_cliente]) {
+                        clientesCache[faturaData.id_cliente].data_vencimento_cliente = novaDataCliente;
+                        clientesCache[faturaData.id_cliente].hora_validade = horaAtual;
+                    }
+                }
+            }
+        }
+
+        await registrarLog('fatura_editada', `Fatura ${mesRef} editada`);
         mostrarToast('Fatura atualizada com sucesso!', 'sucesso');
         fecharModalEditarFatura();
         await carregarFaturas();
@@ -1226,37 +2244,32 @@ btnSalvarEdicaoFatura.addEventListener('click', async () => {
 // ========================================
 // EDIÇÃO DE MENSAGENS (Modal)
 // ========================================
-
-// Formatação por seleção (edição) - execCommand
-editarMsgNegritoBotao.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    document.execCommand('bold');
-});
-editarMsgItalicoBotao.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    document.execCommand('italic');
-});
+editarMsgNegritoBotao.addEventListener('mousedown', (e) => { e.preventDefault(); document.execCommand('bold'); });
+editarMsgItalicoBotao.addEventListener('mousedown', (e) => { e.preventDefault(); document.execCommand('italic'); });
 editarMsgCorTexto.addEventListener('mousedown', salvarSelecao);
-editarMsgCorTexto.addEventListener('input', () => {
-    restaurarSelecao();
-    document.execCommand('foreColor', false, editarMsgCorTexto.value);
-});
+editarMsgCorTexto.addEventListener('input', () => { restaurarSelecao(); document.execCommand('foreColor', false, editarMsgCorTexto.value); });
 editarMsgFonte.addEventListener('mousedown', salvarSelecao);
-editarMsgFonte.addEventListener('change', () => {
-    restaurarSelecao();
-    document.execCommand('fontName', false, editarMsgFonte.value);
-});
+editarMsgFonte.addEventListener('change', () => { restaurarSelecao(); document.execCommand('fontName', false, editarMsgFonte.value); });
 
 function abrirModalEditarMensagem(msgId) {
     const msg = mensagensLista.find(m => m.id === msgId);
     if (!msg) { mostrarToast('Mensagem não encontrada.', 'erro'); return; }
     editarMsgId.value = msgId;
-    editarMsgDestino.value = msg.destino || 'excluida';
+    editarMsgDestino.value = msg.destino || 'excluido';
     editarMsgTitulo.value = msg.titulo || '';
     editarMsgTexto.innerHTML = msg.texto || '';
     editarMsgCorTexto.value = '#333333';
     editarMsgCorFundo.value = msg.corFundo || '#ffffff';
     editarMsgFonte.value = msg.fonte || 'Inter';
+
+    // Clientes específicos
+    if (msg.destino === 'clientes_especificos') {
+        editarMsgClientesAlvoGrupo.style.display = 'block';
+        preencherCheckboxesClientes(editarMsgClientesAlvo, msg.clientesAlvo || []);
+    } else {
+        editarMsgClientesAlvoGrupo.style.display = 'none';
+    }
+
     modalEditarMensagem.style.display = 'flex';
 }
 
@@ -1266,9 +2279,7 @@ function fecharModalEditarMensagem() {
 }
 
 btnFecharModalMensagem.addEventListener('click', fecharModalEditarMensagem);
-modalEditarMensagem.addEventListener('click', (e) => {
-    if (e.target === modalEditarMensagem) fecharModalEditarMensagem();
-});
+modalEditarMensagem.addEventListener('click', (e) => { if (e.target === modalEditarMensagem) fecharModalEditarMensagem(); });
 
 btnSalvarEdicaoMensagem.addEventListener('click', async () => {
     const msgId = editarMsgId.value;
@@ -1290,7 +2301,21 @@ btnSalvarEdicaoMensagem.addEventListener('click', async () => {
         msg.corFundo = editarMsgCorFundo.value;
         msg.fonte = editarMsgFonte.value;
 
+        if (msg.destino === 'clientes_especificos') {
+            msg.clientesAlvo = getClientesSelecionados(editarMsgClientesAlvo);
+            if (msg.clientesAlvo.length === 0) {
+                mostrarToast('Selecione pelo menos um cliente.', 'erro');
+                btnSalvarEdicaoMensagem.disabled = false;
+                btnSalvarEdicaoMsgTexto.style.display = 'inline';
+                btnSalvarEdicaoMsgSpinner.style.display = 'none';
+                return;
+            }
+        } else {
+            delete msg.clientesAlvo;
+        }
+
         await setDoc(doc(db, 'configuracoes', 'mensagens'), { lista: mensagensLista });
+        await registrarLog('mensagem_editada', `Mensagem editada (destino: ${msg.destino})`);
         mostrarToast('Mensagem atualizada com sucesso!', 'sucesso');
         fecharModalEditarMensagem();
         renderizarListaMensagens();
@@ -1317,9 +2342,423 @@ document.addEventListener('click', (e) => {
 });
 
 // ========================================
+// HISTÓRICO DE AÇÕES POR CLIENTE (Modal)
+// ========================================
+function abrirModalHistoricoCliente(clienteId, nomeCliente) {
+    const overlay = document.getElementById('modal-historico-cliente');
+    const titulo = document.getElementById('historico-cliente-titulo');
+    const corpo = document.getElementById('historico-cliente-corpo');
+    const btnFechar = document.getElementById('btn-fechar-historico');
+
+    titulo.textContent = `Histórico: ${nomeCliente}`;
+    corpo.innerHTML = '<p style="text-align:center;color:var(--cor-texto-claro);padding:var(--espacamento-md);">Carregando...</p>';
+    overlay.style.display = 'flex';
+
+    // Filtrar logs que mencionam o cliente (por ID ou nome)
+    const dadosCliente = clientesCache[clienteId];
+    const nomeParaBusca = (dadosCliente?.nome_completo || nomeCliente || '').toLowerCase();
+    const emailParaBusca = (dadosCliente?.email || '').toLowerCase();
+
+    const logsCliente = logsCache.filter(log => {
+        const detalhes = (log.detalhes || '').toLowerCase();
+        return detalhes.includes(clienteId.toLowerCase()) ||
+               (nomeParaBusca && detalhes.includes(nomeParaBusca)) ||
+               (emailParaBusca && detalhes.includes(emailParaBusca));
+    });
+
+    if (logsCliente.length === 0) {
+        corpo.innerHTML = '<p style="text-align:center;color:var(--cor-texto-claro);padding:var(--espacamento-md);">Nenhuma atividade registrada para este cliente.</p>';
+    } else {
+        corpo.innerHTML = '';
+        logsCliente.forEach(log => {
+            const div = document.createElement('div');
+            div.className = 'log-item';
+            const dataStr = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : '--';
+            const acaoLabel = (log.acao || '').replace(/_/g, ' ');
+            div.innerHTML = `
+                <span class="log-acao">${escapeHTML(acaoLabel)}</span>
+                <span class="log-detalhe">${escapeHTML(log.detalhes || '')}</span>
+                <span class="log-data">${dataStr}</span>
+            `;
+            corpo.appendChild(div);
+        });
+    }
+
+    function fechar() {
+        overlay.style.display = 'none';
+        btnFechar.removeEventListener('click', fechar);
+        overlay.removeEventListener('click', clickOverlay);
+    }
+    function clickOverlay(e) { if (e.target === overlay) fechar(); }
+    btnFechar.addEventListener('click', fechar);
+    overlay.addEventListener('click', clickOverlay);
+}
+
+// ========================================
+// EXPORTAR CLIENTES (CSV / XLSX)
+// ========================================
+function exportarClientes(formato) {
+    const lista = Object.entries(clientesCache).map(([id, dados]) => ({ id, ...dados }));
+    if (lista.length === 0) { mostrarToast('Nenhum cliente para exportar.', 'erro'); return; }
+
+    const cabecalho = ['Nome', 'E-mail', 'Telefone', 'Usuário', 'Pacote', 'Situação', 'Data Vencimento'];
+    const dados = lista.map(c => {
+        const calc = calcularDiasRestantes(c.data_vencimento_cliente, c.hora_validade);
+        const sit = c.status_conta === 'suspenso' ? 'Suspenso' : (calc.situacao || '--');
+        return [
+            c.nome_completo || '',
+            c.email || '',
+            c.telefone || '',
+            c.usuario || '',
+            c.pacote || '',
+            sit,
+            c.data_vencimento_cliente || ''
+        ];
+    });
+
+    if (formato === 'xlsx') {
+        gerarXLSX(cabecalho, dados, `clientes_icoutv_${new Date().toISOString().slice(0,10)}`);
+    } else {
+        gerarCSV(cabecalho, dados, `clientes_icoutv_${new Date().toISOString().slice(0,10)}`);
+    }
+    mostrarToast('Clientes exportados com sucesso!', 'sucesso');
+}
+
+// ========================================
+// EXPORTAR LOGS (CSV / XLSX)
+// ========================================
+function exportarLogs(formato) {
+    if (logsCache.length === 0) { mostrarToast('Nenhum log para exportar.', 'erro'); return; }
+
+    const cabecalho = ['Ação', 'Detalhes', 'Admin', 'Data/Hora'];
+    const dados = logsCache.map(log => {
+        const dataStr = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : '--';
+        return [
+            (log.acao || '').replace(/_/g, ' '),
+            log.detalhes || '',
+            log.admin_email || '',
+            dataStr
+        ];
+    });
+
+    if (formato === 'xlsx') {
+        gerarXLSX(cabecalho, dados, `logs_icoutv_${new Date().toISOString().slice(0,10)}`);
+    } else {
+        gerarCSV(cabecalho, dados, `logs_icoutv_${new Date().toISOString().slice(0,10)}`);
+    }
+    mostrarToast('Logs exportados com sucesso!', 'sucesso');
+}
+
+// ========================================
+// GERAR CSV (utilitário)
+// ========================================
+function gerarCSV(cabecalho, linhas, nomeArquivo) {
+    const csvLinhas = linhas.map(linha =>
+        linha.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
+    );
+    const csvContent = '\uFEFF' + cabecalho.join(',') + '\n' + csvLinhas.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `${nomeArquivo}.csv`);
+}
+
+// ========================================
+// GERAR XLSX (utilitário - formato XML Spreadsheet)
+// ========================================
+function gerarXLSX(cabecalho, linhas, nomeArquivo) {
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<?mso-application progid="Excel.Sheet"?>\n';
+    xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n';
+    xml += ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n';
+    xml += '<Styles><Style ss:ID="Bold"><Font ss:Bold="1"/></Style></Styles>\n';
+    xml += '<Worksheet ss:Name="Dados"><Table>\n';
+
+    // Cabeçalho
+    xml += '<Row>';
+    cabecalho.forEach(col => {
+        xml += `<Cell ss:StyleID="Bold"><Data ss:Type="String">${escapeXML(col)}</Data></Cell>`;
+    });
+    xml += '</Row>\n';
+
+    // Dados
+    linhas.forEach(linha => {
+        xml += '<Row>';
+        linha.forEach(val => {
+            xml += `<Cell><Data ss:Type="String">${escapeXML(String(val))}</Data></Cell>`;
+        });
+        xml += '</Row>\n';
+    });
+
+    xml += '</Table></Worksheet></Workbook>';
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    downloadBlob(blob, `${nomeArquivo}.xlsx`);
+}
+
+function escapeXML(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function downloadBlob(blob, nome) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nome;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ========================================
+// CONFIRMAÇÕES DE PAGAMENTO (CLIENTES)
+// ========================================
+let confirmacoesPagamentoCache = [];
+
+async function carregarConfirmacoesPagamento() {
+    const container = document.getElementById('confirmacoes-container');
+    try {
+        const ref = collection(db, 'confirmacoes_pagamento');
+        const q = query(ref, orderBy('data', 'desc'), limit(50));
+        const snap = await getDocs(q);
+
+        confirmacoesPagamentoCache = [];
+        snap.forEach((docSnap) => {
+            confirmacoesPagamentoCache.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        renderizarConfirmacoes();
+    } catch (error) {
+        console.error('Erro ao carregar confirmações:', error);
+        if (container) container.innerHTML = '<p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-erro);text-align:center;padding:var(--espacamento-md);">Erro ao carregar confirmações.</p>';
+    }
+}
+
+function renderizarConfirmacoes() {
+    const container = document.getElementById('confirmacoes-container');
+    if (!container) return;
+
+    const pendentes = confirmacoesPagamentoCache.filter(c => c.status === 'pendente');
+    const resolvidas = confirmacoesPagamentoCache.filter(c => c.status !== 'pendente');
+
+    // Badge com contagem de pendentes
+    const badge = document.getElementById('confirmacoes-badge');
+    if (badge) {
+        if (pendentes.length > 0) {
+            badge.textContent = pendentes.length;
+            badge.style.display = 'inline';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // Atualizar preview do dashboard
+    renderizarDashNotifPreview();
+
+    if (confirmacoesPagamentoCache.length === 0) {
+        container.innerHTML = '<p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-texto-claro);text-align:center;padding:var(--espacamento-md);">Nenhuma confirmação de pagamento recebida.</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+
+    // Pendentes primeiro
+    pendentes.forEach(conf => {
+        container.appendChild(criarCardConfirmacao(conf, true));
+    });
+
+    // Resolvidas
+    resolvidas.forEach(conf => {
+        container.appendChild(criarCardConfirmacao(conf, false));
+    });
+}
+
+function criarCardConfirmacao(conf, isPendente) {
+    const div = document.createElement('div');
+    const isExclusao = conf.tipo === 'exclusao_conta';
+    div.className = `confirmacao-item ${isPendente ? (isExclusao ? 'confirmacao-exclusao' : 'confirmacao-pendente') : 'confirmacao-resolvida'}`;
+
+    const dataStr = conf.data?.toDate ? conf.data.toDate().toLocaleString('pt-BR') : '--';
+    const nomeCliente = escapeHTML(conf.nome_cliente || conf.email_cliente || 'Cliente');
+    const faturaRef = escapeHTML(conf.fatura_referencia || '--');
+    const tipoLabel = isExclusao ? '⚠️ Exclusão de conta' : `Fatura: ${faturaRef}`;
+
+    div.innerHTML = `
+        <div class="confirmacao-item-info">
+            <p class="confirmacao-item-nome">${nomeCliente}</p>
+            <p class="confirmacao-item-detalhe">${tipoLabel} · ${dataStr}</p>
+        </div>
+        <div class="confirmacao-item-acoes">
+            ${isPendente
+                ? `<button class="btn btn-sm btn-sucesso" data-resolver-confirmacao="${conf.id}" title="Marcar como resolvida">✔ Resolver</button>`
+                : '<span class="badge badge-ativo" style="font-size:var(--fonte-tamanho-xs);">Resolvida</span>'
+            }
+            <button class="btn btn-sm btn-deletar-notificacao" data-deletar-confirmacao="${conf.id}" title="Excluir notificação" style="background:none;border:1px solid var(--cor-borda);color:var(--cor-texto-claro);padding:2px 6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+        </div>
+    `;
+    return div;
+}
+
+// Resolver confirmação
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-resolver-confirmacao]');
+    if (!btn) return;
+
+    const id = btn.dataset.resolverConfirmacao;
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+        await updateDoc(doc(db, 'confirmacoes_pagamento', id), {
+            status: 'resolvida',
+            resolvido_em: serverTimestamp(),
+            resolvido_por: ADMIN_EMAIL
+        });
+
+        // Atualizar cache local
+        const item = confirmacoesPagamentoCache.find(c => c.id === id);
+        if (item) item.status = 'resolvida';
+
+        renderizarConfirmacoes();
+        await registrarLog('confirmacao_pagamento_resolvida', `Confirmação de ${item?.nome_cliente || item?.email_cliente || id} resolvida`);
+        mostrarToast('Confirmação resolvida!', 'sucesso');
+    } catch (error) {
+        console.error('Erro ao resolver confirmação:', error);
+        mostrarToast('Erro ao resolver confirmação.', 'erro');
+        btn.disabled = false;
+        btn.textContent = '✔ Resolver';
+    }
+});
+
+// Excluir notificação
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-deletar-confirmacao]');
+    if (!btn) return;
+
+    const id = btn.dataset.deletarConfirmacao;
+    if (!confirm('Excluir esta notificação?')) return;
+
+    btn.disabled = true;
+    try {
+        await deleteDoc(doc(db, 'confirmacoes_pagamento', id));
+        confirmacoesPagamentoCache = confirmacoesPagamentoCache.filter(c => c.id !== id);
+        renderizarConfirmacoes();
+        await registrarLog('notificacao_excluida', `Notificação ${id} excluída`);
+        mostrarToast('Notificação excluída.', 'sucesso');
+    } catch (error) {
+        console.error('Erro ao excluir notificação:', error);
+        mostrarToast('Erro ao excluir notificação.', 'erro');
+        btn.disabled = false;
+    }
+});
+
+// ========================================
+// LOGS DE AÇÕES
+// ========================================
+async function registrarLog(acao, detalhes) {
+    try {
+        await addDoc(collection(db, 'logs'), {
+            acao: acao,
+            detalhes: detalhes,
+            admin_email: ADMIN_EMAIL,
+            timestamp: serverTimestamp()
+        });
+    } catch (error) {
+        console.warn('Erro ao registrar log:', error);
+    }
+}
+
+async function carregarLogs() {
+    const logsContainer = document.getElementById('logs-container');
+    try {
+        const logsRef = collection(db, 'logs');
+        const q = query(logsRef, orderBy('timestamp', 'desc'), limit(100));
+        const snap = await getDocs(q);
+
+        logsCache = [];
+        snap.forEach((docSnap) => {
+            logsCache.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        renderizarLogs();
+    } catch (error) {
+        console.error('Erro ao carregar logs:', error);
+        logsContainer.innerHTML = '<p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-erro);text-align:center;padding:var(--espacamento-md);">Erro ao carregar logs.</p>';
+    }
+}
+
+function renderizarLogs() {
+    const logsContainer = document.getElementById('logs-container');
+    const filtroAcao = filtroLogsAcao.value;
+    let lista = [...logsCache];
+    if (filtroAcao) {
+        lista = lista.filter(l => l.acao === filtroAcao);
+    }
+
+    if (lista.length === 0) {
+        logsContainer.innerHTML = '<p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-texto-claro);text-align:center;padding:var(--espacamento-md);">Nenhum log encontrado.</p>';
+        return;
+    }
+
+    logsContainer.innerHTML = '';
+    lista.forEach(log => {
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        const dataStr = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : '--';
+        const acaoLabel = (log.acao || '').replace(/_/g, ' ');
+        div.innerHTML = `
+            <span class="log-acao">${escapeHTML(acaoLabel)}</span>
+            <span class="log-detalhe">${escapeHTML(log.detalhes || '')}</span>
+            <span class="log-data">${dataStr}</span>
+        `;
+        logsContainer.appendChild(div);
+    });
+}
+
+filtroLogsAcao.addEventListener('change', renderizarLogs);
+
+// ========================================
+// MINI MENU DE AÇÕES (toggle/fechar)
+// ========================================
+document.addEventListener('click', (e) => {
+    // Toggle export dropdown
+    const btnExportar = e.target.closest('.btn-exportar-toggle');
+    if (btnExportar) {
+        e.stopPropagation();
+        const dropdown = btnExportar.closest('.export-dropdown');
+        const aberto = dropdown.classList.contains('aberto');
+        document.querySelectorAll('.export-dropdown.aberto').forEach(d => d.classList.remove('aberto'));
+        if (!aberto) dropdown.classList.add('aberto');
+        return;
+    }
+    // Fechar export dropdowns ao clicar em item ou fora
+    if (e.target.closest('.export-dropdown-item')) {
+        document.querySelectorAll('.export-dropdown.aberto').forEach(d => d.classList.remove('aberto'));
+    }
+    if (!e.target.closest('.export-dropdown')) {
+        document.querySelectorAll('.export-dropdown.aberto').forEach(d => d.classList.remove('aberto'));
+    }
+
+    const btnMais = e.target.closest('.btn-mais-acoes');
+    if (btnMais) {
+        e.stopPropagation();
+        const menu = btnMais.nextElementSibling;
+        const estaAberto = menu.classList.contains('aberto');
+        // Fechar todos os menus abertos
+        document.querySelectorAll('.acoes-menu.aberto').forEach(m => m.classList.remove('aberto'));
+        // Toggle do menu clicado
+        if (!estaAberto) menu.classList.add('aberto');
+        return;
+    }
+    // Clicou fora de qualquer menu → fechar todos
+    if (!e.target.closest('.acoes-menu')) {
+        document.querySelectorAll('.acoes-menu.aberto').forEach(m => m.classList.remove('aberto'));
+    }
+});
+
+// ========================================
 // CONFIRMAÇÃO PERSONALIZADA (substitui confirm nativo)
 // ========================================
-
 function confirmarAcao(mensagem) {
     return new Promise((resolve) => {
         const overlay = document.getElementById('modal-confirmacao');
@@ -1349,15 +2788,12 @@ function confirmarAcao(mensagem) {
 // ========================================
 // UTILITÁRIOS
 // ========================================
-
-// Escape HTML para prevenir XSS
 function escapeHTML(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
 
-// Toast / Notificação
 function mostrarToast(mensagem, tipo = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${tipo}`;

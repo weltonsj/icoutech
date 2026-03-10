@@ -99,7 +99,7 @@ async function verificarStatusCliente(user) {
         const clienteRef = doc(db, 'clientes', user.uid);
         const clienteSnap = await getDoc(clienteRef);
 
-        if (clienteSnap.exists() && clienteSnap.data().status_conta === 'excluida') {
+        if (clienteSnap.exists() && clienteSnap.data().status_conta === 'excluido') {
             let mensagem = 'Sua conta foi desativada. Entre em contato com o suporte.';
             try {
                 const msgRef = doc(db, 'configuracoes', 'mensagens');
@@ -108,7 +108,7 @@ async function verificarStatusCliente(user) {
                     const dados = msgSnap.data();
                     const lista = dados.lista || [];
                     const msgsExcluida = lista
-                        .filter(m => m.destino === 'excluida' && m.ativa !== false)
+                        .filter(m => m.destino === 'excluido' && m.ativa !== false)
                         .sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
                     if (msgsExcluida.length > 0) {
                         const nomeExcluido = clienteSnap.data().nome_completo || 'Cliente';
@@ -121,7 +121,7 @@ async function verificarStatusCliente(user) {
                             return txt
                                 .replace(/%nome%/g, nomeExcluido)
                                 .replace(/%email%/g, user.email || '')
-                                .replace(/%status%/g, 'excluída');
+                                .replace(/%status%/g, 'excluído');
                         }).join('\n\n');
                     } else if (dados.mensagem_usuario_excluido) {
                         mensagem = dados.mensagem_usuario_excluido;
