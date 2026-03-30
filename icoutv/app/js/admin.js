@@ -121,6 +121,7 @@ const editarMsgClientesAlvo = document.getElementById('editar-msg-clientes-alvo'
 // Modal Editar Cliente
 const modalEditarCliente = document.getElementById('modal-editar-cliente');
 const editarClienteId = document.getElementById('editar-cliente-id');
+const editarClienteUid = document.getElementById('editar-cliente-uid');
 const editarClienteNome = document.getElementById('editar-cliente-nome');
 const editarClienteEmail = document.getElementById('editar-cliente-email');
 const editarClienteStatus = document.getElementById('editar-cliente-status');
@@ -161,9 +162,11 @@ const editarClienteEstado = document.getElementById('editar-cliente-estado');
 // Modal Editar Fatura
 const modalEditarFatura = document.getElementById('modal-editar-fatura');
 const editarFaturaId = document.getElementById('editar-fatura-id');
+const editarFaturaUid = document.getElementById('editar-fatura-uid');
 const editarFaturaCliente = document.getElementById('editar-fatura-cliente');
 const editarFaturaMes = document.getElementById('editar-fatura-mes');
 const editarFaturaVencimento = document.getElementById('editar-fatura-vencimento');
+const editarFaturaHoraValidade = document.getElementById('editar-fatura-hora-validade');
 const editarFaturaUrlPdf = document.getElementById('editar-fatura-url-pdf');
 const editarUploadArea = document.getElementById('editar-upload-area');
 const editarInputPdf = document.getElementById('editar-input-pdf');
@@ -210,6 +213,57 @@ let faturasPaginaAtual = 1;
 let allFaturasDocs = [];
 let logsCache = [];
 
+// Elemento hora validade na Nova Fatura
+const horaValidadeFaturaInput = document.getElementById('hora-validade-fatura');
+
+// ========================================
+// MÁSCARAS DE INPUT (CPF, CEP, Data DD/MM/AAAA)
+// ========================================
+function aplicarMascaraCPF(valor) {
+    const nums = valor.replace(/\D/g, '').slice(0, 11);
+    if (nums.length <= 3) return nums;
+    if (nums.length <= 6) return nums.slice(0, 3) + '.' + nums.slice(3);
+    if (nums.length <= 9) return nums.slice(0, 3) + '.' + nums.slice(3, 6) + '.' + nums.slice(6);
+    return nums.slice(0, 3) + '.' + nums.slice(3, 6) + '.' + nums.slice(6, 9) + '-' + nums.slice(9);
+}
+
+function aplicarMascaraCEP(valor) {
+    const nums = valor.replace(/\D/g, '').slice(0, 8);
+    if (nums.length <= 5) return nums;
+    return nums.slice(0, 5) + '-' + nums.slice(5);
+}
+
+function aplicarMascaraData(valor) {
+    const nums = valor.replace(/\D/g, '').slice(0, 8);
+    if (nums.length <= 2) return nums;
+    if (nums.length <= 4) return nums.slice(0, 2) + '/' + nums.slice(2);
+    return nums.slice(0, 2) + '/' + nums.slice(2, 4) + '/' + nums.slice(4);
+}
+
+function aplicarMascaraTelefone(valor) {
+    const nums = valor.replace(/\D/g, '').slice(0, 11);
+    if (nums.length <= 2) return nums.length ? '(' + nums : '';
+    if (nums.length <= 7) return '(' + nums.slice(0, 2) + ') ' + nums.slice(2);
+    return '(' + nums.slice(0, 2) + ') ' + nums.slice(2, 7) + '-' + nums.slice(7);
+}
+
+function vincularMascara(input, mascaraFn) {
+    if (!input) return;
+    input.addEventListener('input', () => { input.value = mascaraFn(input.value); });
+}
+
+// Aplicar máscaras nos campos de cadastro e edição
+vincularMascara(novoCpf, aplicarMascaraCPF);
+vincularMascara(novoCep, aplicarMascaraCEP);
+vincularMascara(novoDataVencimento, aplicarMascaraData);
+vincularMascara(novoTelefone, aplicarMascaraTelefone);
+vincularMascara(editarClienteCpf, aplicarMascaraCPF);
+vincularMascara(editarClienteCep, aplicarMascaraCEP);
+vincularMascara(editarClienteDataVencimento, aplicarMascaraData);
+vincularMascara(editarClienteTelefone, aplicarMascaraTelefone);
+// Máscara data no modal Nova Data Vencimento
+vincularMascara(document.getElementById('nova-data-venc-input'), aplicarMascaraData);
+
 // Salvar/restaurar seleção (para usar com color picker que rouba foco)
 function salvarSelecao() {
     const sel = window.getSelection();
@@ -245,6 +299,16 @@ function formatDateDDMMAAAA(date) {
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const a = date.getFullYear();
     return `${d}/${m}/${a}`;
+}
+
+function formatarVencimentoFatura(dataStr) {
+    if (!dataStr) return '--';
+    // Se já está no formato dd/mm/aaaa
+    if (dataStr.includes('/')) return dataStr;
+    // Converter yyyy-mm-dd para dd/mm/aaaa
+    const partes = dataStr.split('-');
+    if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    return dataStr;
 }
 
 function calcularDiasRestantes(dataVencStr, horaStr) {
@@ -327,16 +391,43 @@ function decrementarFaturasPagas() {
 
 // Template WhatsApp (configurável pelo admin)
 let whatsAppTemplate = 'Olá %nome%, sua assinatura icouTv venceu em %data_vencimento%. Renove agora pelo portal: https://icoutech.com/icoutv/app';
+let whatsAppMensagens = [];
 
 async function carregarWhatsAppConfig() {
     try {
         const snap = await getDoc(doc(db, 'configuracoes', 'whatsapp'));
-        if (snap.exists() && snap.data().template) {
-            whatsAppTemplate = snap.data().template;
+        if (snap.exists()) {
+            if (snap.data().template) whatsAppTemplate = snap.data().template;
+            if (snap.data().mensagens) whatsAppMensagens = snap.data().mensagens;
         }
         const templateEl = document.getElementById('whatsapp-msg-template');
         if (templateEl) templateEl.value = whatsAppTemplate;
+        renderizarListaWhatsApp();
     } catch (e) { console.warn('Erro ao carregar config WhatsApp:', e); }
+}
+
+function renderizarListaWhatsApp() {
+    const container = document.getElementById('lista-whatsapp-mensagens');
+    if (!container) return;
+    if (whatsAppMensagens.length === 0) {
+        container.innerHTML = '<p style="font-size:var(--fonte-tamanho-sm);color:var(--cor-texto-claro);text-align:center;padding:var(--espacamento-sm);">Nenhuma mensagem salva.</p>';
+        return;
+    }
+    const categoriaLabels = { cobranca: 'Cobrança', boas_vindas: 'Boas-vindas', renovacao: 'Renovação', aviso: 'Aviso', personalizada: 'Personalizada' };
+    container.innerHTML = whatsAppMensagens.map((m, i) => `
+        <div class="lista-mensagens-item" style="align-items:center;">
+            <div class="msg-conteudo">
+                <div class="msg-destino"><span class="msg-status-badge msg-badge-ativa">${categoriaLabels[m.categoria] || m.categoria}</span></div>
+                <div class="msg-texto" style="white-space:pre-wrap;font-size:var(--fonte-tamanho-xs);max-height:60px;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(m.texto)}</div>
+            </div>
+            <div class="msg-acoes" style="flex-direction:row;gap:4px;">
+                <button class="btn-excluir-msg btn-excluir-wa-msg" data-wa-index="${i}" title="Excluir">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+                <button class="btn btn-sm btn-usar-wa-msg" data-wa-index="${i}" style="font-size:var(--fonte-tamanho-xs);min-height:28px;" title="Usar como padrão de cobrança">Usar</button>
+            </div>
+        </div>
+    `).join('');
 }
 
 // ---------- Carregar Promoção ----------
@@ -542,17 +633,53 @@ function renderizarPrestesAVencer() {
         return;
     }
 
+    const dotsSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg>';
+
     listaPrestesVencer.innerHTML = `
         <table class="tabela-alertas">
-            <thead><tr><th>Nome</th><th>Telefone</th><th>Vencimento</th><th>Pacote</th><th>Dias</th></tr></thead>
-            <tbody>${clientes.map(c => `
-                <tr>
-                    <td>${escapeHTML(c.nome_completo || '--')}</td>
-                    <td>${escapeHTML(c.telefone || '--')}</td>
+            <thead>
+                <tr><th class="col-nome-alertas">Nome</th><th class="col-telefone-dash">Telefone</th><th class="col-vencimento-alertas">Vencimento</th><th class="col-hora">Hora</th><th class="col-dias">Dias</th><th class="col-acoes">Ações</th></tr></thead>
+            <tbody>${clientes.map(c => {
+        const telWA = formatarTelefoneWhatsApp(c.telefone);
+        const calcWA = calcularDiasRestantes(c.data_vencimento_cliente, c.hora_validade);
+        let whatsAppItem = '';
+        if (telWA) {
+            const msgWA = whatsAppTemplate
+                .replace(/%nome%/g, c.nome_completo || '')
+                .replace(/%data_vencimento%/g, c.data_vencimento_cliente || '')
+                .replace(/%email%/g, c.email || '')
+                .replace(/%telefone%/g, c.telefone || '')
+                .replace(/%pacote%/g, c.pacote || '')
+                .replace(/%usuario%/g, c.usuario || '')
+                .replace(/%senha%/g, c.senha_servico || '')
+                .replace(/%situacao%/g, calcWA.situacao || '')
+                .replace(/%dias_restantes%/g, String(calcWA.dias));
+            const waLink = `https://wa.me/${encodeURIComponent(telWA)}?text=${encodeURIComponent(msgWA)}`;
+            whatsAppItem = `<a class="acoes-menu-item btn-whatsapp-cobrar" href="${waLink}" target="_blank" rel="noopener noreferrer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;color:#25D366;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 0 0 .611.611l4.458-1.495A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.339 0-4.508-.758-6.262-2.044l-.438-.327-2.67.895.895-2.67-.327-.438A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                        Enviar via WhatsApp
+                    </a>`;
+        }
+        return `<tr>
+                    <td class="celula-truncada" title="${escapeHTML(c.nome_completo || '--')}">${escapeHTML(c.nome_completo || '--')}</td>
+                    <td class="col-telefone-dash">${escapeHTML(c.telefone || '--')}</td>
                     <td>${escapeHTML(c.data_vencimento_cliente || '--')}</td>
-                    <td>${escapeHTML(c.pacote || '--')}</td>
+                    <td>${escapeHTML(c.hora_validade || '--')}</td>
                     <td><span class="badge-dias badge-dias-alerta">${c.dias_restantes_calc}d</span></td>
-                </tr>`).join('')}
+                    <td class="acoes">
+                        <div class="acoes-container">
+                            <button class="btn-mais-acoes" title="Mais ações">${dotsSvg}</button>
+                            <div class="acoes-menu">
+                                <button class="acoes-menu-item btn-detalhes-cliente-dash" data-id="${c.id}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    Detalhes
+                                </button>
+                                ${whatsAppItem}
+                            </div>
+                        </div>
+                    </td>
+                </tr>`;
+    }).join('')}
             </tbody>
         </table>`;
 }
@@ -574,6 +701,7 @@ function renderizarClientesExpirados() {
     });
 
     const temDados = hoje.length > 0 || ate3dias.length > 0 || ate7dias.length > 0;
+    const dotsSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg>';
 
     function renderGrupo(container, lista, grupoId) {
         const grupoEl = document.getElementById(grupoId);
@@ -582,17 +710,50 @@ function renderizarClientesExpirados() {
             return;
         }
         grupoEl.style.display = 'block';
-        container.innerHTML = lista.map(c => `
-            <div class="alerta-item alerta-item-expirado">
+        container.innerHTML = lista.map(c => {
+            const telWA = formatarTelefoneWhatsApp(c.telefone);
+            const calcWA = calcularDiasRestantes(c.data_vencimento_cliente, c.hora_validade);
+            let whatsAppItem = '';
+            if (telWA) {
+                const msgWA = whatsAppTemplate
+                    .replace(/%nome%/g, c.nome_completo || '')
+                    .replace(/%data_vencimento%/g, c.data_vencimento_cliente || '')
+                    .replace(/%email%/g, c.email || '')
+                    .replace(/%telefone%/g, c.telefone || '')
+                    .replace(/%pacote%/g, c.pacote || '')
+                    .replace(/%usuario%/g, c.usuario || '')
+                    .replace(/%senha%/g, c.senha_servico || '')
+                    .replace(/%situacao%/g, calcWA.situacao || '')
+                    .replace(/%dias_restantes%/g, String(calcWA.dias));
+                const waLink = `https://wa.me/${encodeURIComponent(telWA)}?text=${encodeURIComponent(msgWA)}`;
+                whatsAppItem = `<a class="acoes-menu-item btn-whatsapp-cobrar" href="${waLink}" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;color:#25D366;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 0 0 .611.611l4.458-1.495A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.339 0-4.508-.758-6.262-2.044l-.438-.327-2.67.895.895-2.67-.327-.438A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                    Enviar via WhatsApp
+                </a>`;
+            }
+            return `<div class="alerta-item alerta-item-expirado">
                 <div class="alerta-item-info">
-                    <strong>${escapeHTML(c.nome_completo || '--')}</strong>
+                    <strong class="celula-truncada" style="display:block;" title="${escapeHTML(c.nome_completo || '--')}">${escapeHTML(c.nome_completo || '--')}</strong>
                     <span>${escapeHTML(c.telefone || '--')}</span>
                 </div>
                 <div class="alerta-item-meta">
                     <span>Venc: ${escapeHTML(c.data_vencimento_cliente || '--')}</span>
                     <span>${escapeHTML(c.pacote || '--')}</span>
                 </div>
-            </div>`).join('');
+                <div class="alerta-item-acoes">
+                    <div class="acoes-container">
+                        <button class="btn-mais-acoes" title="Mais ações">${dotsSvg}</button>
+                        <div class="acoes-menu">
+                            <button class="acoes-menu-item btn-detalhes-cliente-dash" data-id="${c.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                Detalhes
+                            </button>
+                            ${whatsAppItem}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
     }
 
     renderGrupo(expiradosHojeBody, hoje, 'lista-expirados-hoje');
@@ -649,14 +810,20 @@ onAuthStateChanged(auth, async (user) => {
     if (btnSalvarWhatsApp) {
         btnSalvarWhatsApp.addEventListener('click', async () => {
             const templateEl = document.getElementById('whatsapp-msg-template');
+            const categoriaEl = document.getElementById('whatsapp-msg-categoria');
             const template = templateEl ? templateEl.value.trim() : '';
-            if (!template) { mostrarToast('Informe a mensagem de cobrança.', 'erro'); return; }
+            const categoria = categoriaEl ? categoriaEl.value : 'cobranca';
+            if (!template) { mostrarToast('Informe a mensagem.', 'erro'); return; }
             btnSalvarWhatsApp.disabled = true;
             try {
-                await setDoc(doc(db, 'configuracoes', 'whatsapp'), { template });
-                whatsAppTemplate = template;
-                await registrarLog('whatsapp_config', 'Template de cobrança WhatsApp atualizado');
-                mostrarToast('Configuração do WhatsApp salva!', 'sucesso');
+                // Salvar como template padrão de cobrança E adicionar à lista de mensagens
+                whatsAppMensagens.push({ categoria, texto: template, criadoEm: new Date().toISOString() });
+                if (categoria === 'cobranca') whatsAppTemplate = template;
+                await setDoc(doc(db, 'configuracoes', 'whatsapp'), { template: whatsAppTemplate, mensagens: whatsAppMensagens });
+                await registrarLog('whatsapp_config', `Mensagem WhatsApp salva (${categoria})`);
+                mostrarToast('Mensagem WhatsApp salva!', 'sucesso');
+                templateEl.value = '';
+                renderizarListaWhatsApp();
             } catch (error) {
                 console.error('Erro ao salvar config WhatsApp:', error);
                 mostrarToast('Erro ao salvar configuração.', 'erro');
@@ -664,6 +831,32 @@ onAuthStateChanged(auth, async (user) => {
             btnSalvarWhatsApp.disabled = false;
         });
     }
+
+    // Excluir e Usar mensagem WhatsApp (delegação)
+    document.addEventListener('click', async (e) => {
+        const btnExcluir = e.target.closest('.btn-excluir-wa-msg');
+        if (btnExcluir) {
+            const idx = parseInt(btnExcluir.dataset.waIndex, 10);
+            if (isNaN(idx) || idx < 0 || idx >= whatsAppMensagens.length) return;
+            whatsAppMensagens.splice(idx, 1);
+            try {
+                await setDoc(doc(db, 'configuracoes', 'whatsapp'), { template: whatsAppTemplate, mensagens: whatsAppMensagens });
+                renderizarListaWhatsApp();
+                mostrarToast('Mensagem excluída.', 'sucesso');
+            } catch (err) { mostrarToast('Erro ao excluir.', 'erro'); }
+            return;
+        }
+        const btnUsar = e.target.closest('.btn-usar-wa-msg');
+        if (btnUsar) {
+            const idx = parseInt(btnUsar.dataset.waIndex, 10);
+            if (isNaN(idx) || idx < 0 || idx >= whatsAppMensagens.length) return;
+            whatsAppTemplate = whatsAppMensagens[idx].texto;
+            try {
+                await setDoc(doc(db, 'configuracoes', 'whatsapp'), { template: whatsAppTemplate, mensagens: whatsAppMensagens });
+                mostrarToast('Mensagem definida como padrão de cobrança!', 'sucesso');
+            } catch (err) { mostrarToast('Erro ao definir como padrão.', 'erro'); }
+        }
+    });
 
     // Salvar promoção
     const btnSalvarPromo = document.getElementById('btn-salvar-promocao');
@@ -746,6 +939,10 @@ btnBuscarCliente.addEventListener('click', async () => {
                     const dd = String(dataVencCliente.getDate()).padStart(2, '0');
                     dataVencimentoInput.value = `${yyyy}-${mm}-${dd}`;
                 }
+            }
+            // Auto-preencher hora de validade
+            if (dados.hora_validade && horaValidadeFaturaInput) {
+                horaValidadeFaturaInput.value = dados.hora_validade;
             }
             mostrarToast('Cliente encontrado!', 'sucesso');
         } else {
@@ -860,6 +1057,7 @@ formFatura.addEventListener('submit', async (e) => {
             id_cliente: uidCliente,
             mes_referencia: mesRef,
             data_vencimento: dataVenc,
+            hora_validade: horaValidadeFaturaInput ? horaValidadeFaturaInput.value.trim() : '',
             url_pdf_cloudinary: urlPdf,
             codigo_pix_copia: codigoPix,
             status_pagamento: status,
@@ -1049,7 +1247,7 @@ function getClientesFiltrados() {
         lista = lista.filter(c => {
             const calc = calcularDiasRestantes(c.data_vencimento_cliente, c.hora_validade);
             if (filtroRapidoAtivo === 'nao_expirados') return c.status_conta !== 'suspenso' && typeof calc.dias === 'number' && calc.dias > 0;
-            if (filtroRapidoAtivo === 'expirados') return typeof calc.dias === 'number' && calc.dias < 0;
+            if (filtroRapidoAtivo === 'expirados') return c.status_conta !== 'suspenso' && c.status_conta !== 'excluido' && typeof calc.dias === 'number' && calc.dias < 0;
             if (filtroRapidoAtivo === 'suspensos') return c.status_conta === 'suspenso';
             if (filtroRapidoAtivo === 'vencem_3dias') return c.status_conta !== 'suspenso' && typeof calc.dias === 'number' && calc.dias >= 0 && calc.dias <= 3;
             return true;
@@ -1092,11 +1290,25 @@ function renderizarTabelaClientes(todosClientesParam) {
         const tr = document.createElement('tr');
 
         let inlineHtml = `
+            <button class="btn btn-sm btn-detalhes-cliente-dash" data-id="${docId}" style="background:var(--cor-info, #17a2b8);color:#fff;border:none;" title="Detalhes">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
             <button class="btn btn-sm btn-editar-cliente" data-id="${docId}" style="background:var(--cor-primaria);color:#fff;border:none;" title="Editar cliente">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+            </button>
+            <button class="btn btn-sm btn-adicionar-fatura-cliente" data-id="${docId}" data-nome="${nomeCliente}" style="background:var(--cor-secundaria, #6c757d);color:#fff;border:none;" title="Adicionar Fatura">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" x2="12" y1="18" y2="12"></line><line x1="9" x2="15" y1="15" y2="15"></line></svg>
             </button>`;
 
         let menuHtml = `
+            <button class="acoes-menu-item btn-detalhes-cliente-dash" data-id="${docId}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                Detalhes
+            </button>
+            <button class="acoes-menu-item btn-editar-cliente" data-id="${docId}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+                Editar
+            </button>
             <button class="acoes-menu-item btn-reenviar-senha" data-id="${docId}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
                 Reenviar Senha
@@ -1112,6 +1324,10 @@ function renderizarTabelaClientes(todosClientesParam) {
             <button class="acoes-menu-item btn-historico-cliente" data-id="${docId}" data-nome="${nomeCliente}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 Histórico
+            </button>
+            <button class="acoes-menu-item btn-adicionar-fatura-cliente" data-id="${docId}" data-nome="${nomeCliente}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" x2="12" y1="18" y2="12"></line><line x1="9" x2="15" y1="15" y2="15"></line></svg>
+                Adicionar Fatura
             </button>`;
 
         if (statusCliente === 'ativo') {
@@ -1120,6 +1336,10 @@ function renderizarTabelaClientes(todosClientesParam) {
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
                 </button>`;
             menuHtml += `
+                <button class="acoes-menu-item btn-alterar-status" data-id="${docId}" data-nome="${nomeCliente}" data-novo-status="suspenso">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                    Suspender
+                </button>
                 <button class="acoes-menu-item item-perigo btn-alterar-status" data-id="${docId}" data-nome="${nomeCliente}" data-novo-status="excluido">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     Excluir
@@ -1130,6 +1350,10 @@ function renderizarTabelaClientes(todosClientesParam) {
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </button>`;
             menuHtml += `
+                <button class="acoes-menu-item btn-alterar-status" data-id="${docId}" data-nome="${nomeCliente}" data-novo-status="ativo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Ativar
+                </button>
                 <button class="acoes-menu-item item-perigo btn-alterar-status" data-id="${docId}" data-nome="${nomeCliente}" data-novo-status="excluido">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     Excluir
@@ -1157,26 +1381,45 @@ function renderizarTabelaClientes(todosClientesParam) {
             indicador = '--'; indicadorClasse = '';
         }
 
-        // Botão WhatsApp Cobrar (apenas no menu de 3 pontos)
+        // Botão WhatsApp Enviar (submenu com categorias)
         const telWhatsApp = formatarTelefoneWhatsApp(dados.telefone);
         if (telWhatsApp) {
             const calcWA = calcularDiasRestantes(dados.data_vencimento_cliente, dados.hora_validade);
-            const msgWhatsApp = whatsAppTemplate
-                .replace(/%nome%/g, dados.nome_completo || '')
-                .replace(/%data_vencimento%/g, dados.data_vencimento_cliente || '')
-                .replace(/%email%/g, dados.email || '')
-                .replace(/%telefone%/g, dados.telefone || '')
-                .replace(/%pacote%/g, dados.pacote || '')
-                .replace(/%usuario%/g, dados.usuario || '')
-                .replace(/%senha%/g, dados.senha_servico || '')
-                .replace(/%situacao%/g, calcWA.situacao || '')
-                .replace(/%dias_restantes%/g, String(calcWA.dias));
-            const whatsAppLink = `https://wa.me/${encodeURIComponent(telWhatsApp)}?text=${encodeURIComponent(msgWhatsApp)}`;
-            menuHtml += `
+            const waVars = {
+                '%nome%': dados.nome_completo || '',
+                '%data_vencimento%': dados.data_vencimento_cliente || '',
+                '%email%': dados.email || '',
+                '%telefone%': dados.telefone || '',
+                '%pacote%': dados.pacote || '',
+                '%usuario%': dados.usuario || '',
+                '%senha%': dados.senha_servico || '',
+                '%situacao%': calcWA.situacao || '',
+                '%dias_restantes%': String(calcWA.dias)
+            };
+            function gerarLinkWA(template) {
+                let msg = template;
+                for (const [k, v] of Object.entries(waVars)) msg = msg.replace(new RegExp(k.replace(/%/g, '%'), 'g'), v);
+                return `https://wa.me/${encodeURIComponent(telWhatsApp)}?text=${encodeURIComponent(msg)}`;
+            }
+            const categoriaLabels = { cobranca: 'Cobrança', boas_vindas: 'Boas-vindas', renovacao: 'Renovação', aviso: 'Aviso', personalizada: 'Personalizada' };
+            if (whatsAppMensagens.length > 0) {
+                let waSubItems = whatsAppMensagens.map(m =>
+                    `<a class="acoes-submenu-item" href="${gerarLinkWA(m.texto)}" target="_blank" rel="noopener noreferrer">${escapeHTML(categoriaLabels[m.categoria] || m.categoria)}</a>`
+                ).join('');
+                menuHtml += `
+                <div class="acoes-menu-item acoes-submenu-trigger" style="position:relative;cursor:pointer;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;color:#25D366;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 0 0 .611.611l4.458-1.495A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.339 0-4.508-.758-6.262-2.044l-.438-.327-2.67.895.895-2.67-.327-.438A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                    Enviar via WhatsApp ▸
+                    <div class="acoes-submenu">${waSubItems}</div>
+                </div>`;
+            } else {
+                const whatsAppLink = gerarLinkWA(whatsAppTemplate);
+                menuHtml += `
                 <a class="acoes-menu-item btn-whatsapp-cobrar" href="${whatsAppLink}" target="_blank" rel="noopener noreferrer">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;color:#25D366;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 0 0 .611.611l4.458-1.495A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.339 0-4.508-.758-6.262-2.044l-.438-.327-2.67.895.895-2.67-.327-.438A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-                    Cobrar via WhatsApp
+                    Enviar via WhatsApp
                 </a>`;
+            }
         }
 
         // Observação administrativa
@@ -1187,7 +1430,7 @@ function renderizarTabelaClientes(todosClientesParam) {
 
         tr.innerHTML = `
             <td class="celula-truncada" title="${escapeHTML(dados.nome_completo || '--')}">${escapeHTML(dados.nome_completo || '--')}</td>
-            <td class="celula-truncada" style="font-size:var(--fonte-tamanho-xs);" title="${escapeHTML(dados.email || '--')}">${escapeHTML(dados.email || '--')}</td>
+            <td class="celula-truncada col-email-clientes" style="font-size:var(--fonte-tamanho-xs);" title="${escapeHTML(dados.email || '--')}">${escapeHTML(dados.email || '--')}</td>
             <td><span class="badge badge-${statusCliente}">${statusCliente}</span></td>
             <td><span class="indicador-situacao ${indicadorClasse}">${indicador}</span></td>
             <td class="td-obs">${obsHtml}</td>
@@ -1288,6 +1531,38 @@ function renderizarTabelaClientes(todosClientesParam) {
             const clienteId = e.currentTarget.dataset.id;
             const nomeC = e.currentTarget.dataset.nome;
             abrirModalHistoricoCliente(clienteId, nomeC);
+        });
+    });
+
+    // Adicionar Fatura para cliente
+    document.querySelectorAll('.btn-adicionar-fatura-cliente').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const clienteId = e.currentTarget.dataset.id;
+            const dados = clientesCache[clienteId];
+            if (!dados) { mostrarToast('Dados do cliente não encontrados.', 'erro'); return; }
+            // Navegar para a página de faturas
+            document.querySelectorAll('.nav-link').forEach(nl => {
+                if (nl.dataset.pagina === 'faturas') nl.click();
+            });
+            // Preencher dados do cliente no formulário de nova fatura
+            clienteEmailInput.value = dados.nome_completo || dados.email || '';
+            clienteNomeEncontrado.textContent = `${dados.nome_completo} (${dados.status_conta})`;
+            clienteUid.textContent = clienteId;
+            clienteInfo.style.display = 'block';
+            clienteNaoEncontrado.style.display = 'none';
+            // Auto-preencher data de vencimento e hora
+            if (dados.data_vencimento_cliente) {
+                const dtVenc = parseDateDDMMAAAA(dados.data_vencimento_cliente);
+                if (dtVenc) {
+                    const yyyy = dtVenc.getFullYear();
+                    const mm = String(dtVenc.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dtVenc.getDate()).padStart(2, '0');
+                    dataVencimentoInput.value = `${yyyy}-${mm}-${dd}`;
+                }
+            }
+            if (dados.hora_validade && horaValidadeFaturaInput) {
+                horaValidadeFaturaInput.value = dados.hora_validade;
+            }
         });
     });
 }
@@ -1453,9 +1728,9 @@ function renderizarListaMensagens() {
                         </button>
                         <button class="btn-toggle-msg" data-msg-id="${msg.id}" title="${isAtiva ? 'Desativar' : 'Ativar'} mensagem">
                             ${isAtiva
-                                ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-pendente)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>'
-                                : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-sucesso)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="20 6 9 17 4 12"></polyline></svg>'
-                            }
+                ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-pendente)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cor-sucesso)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+            }
                         </button>
                     </div>
                     <button class="btn-mais-acoes" title="Mais ações">
@@ -1750,7 +2025,32 @@ function renderizarTabelaFaturas() {
                 </button>`;
         }
 
-        const menuHtml = `
+        let menuHtml = `
+            <button class="acoes-menu-item btn-editar-fatura" data-id="${docId}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+                Editar Fatura
+            </button>`;
+
+        if (dados.url_pdf_cloudinary) {
+            menuHtml += `<a class="acoes-menu-item" href="${escapeHTML(dados.url_pdf_cloudinary)}" target="_blank" rel="noopener noreferrer">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                Ver PDF
+            </a>`;
+        }
+
+        if (isPendente) {
+            menuHtml += `<button class="acoes-menu-item btn-marcar-pago" data-id="${docId}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Marcar como Pago
+            </button>`;
+        } else {
+            menuHtml += `<button class="acoes-menu-item btn-marcar-pendente" data-id="${docId}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Marcar como Pendente
+            </button>`;
+        }
+
+        menuHtml += `
             <button class="acoes-menu-item item-perigo btn-deletar-fatura" data-id="${docId}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 Excluir
@@ -1759,8 +2059,10 @@ function renderizarTabelaFaturas() {
         const dotsSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg>';
 
         tr.innerHTML = `
+            <td class="col-uid-faturas" style="font-size:var(--fonte-tamanho-xs);font-family:monospace;" title="${escapeHTML(dados.id_cliente || '--')}">${escapeHTML((dados.id_cliente || '--').substring(0, 8))}…</td>
             <td class="celula-truncada" style="font-size:var(--fonte-tamanho-xs);" title="${escapeHTML(nomeCliente)}">${escapeHTML(nomeCliente)}</td>
             <td>${escapeHTML(dados.mes_referencia || '--')}</td>
+            <td class="col-vencimento-faturas">${escapeHTML(formatarVencimentoFatura(dados.data_vencimento))}</td>
             <td><span class="badge badge-${statusAtual}">${statusAtual}</span></td>
             <td class="acoes">
                 <div class="acoes-container">
@@ -1773,14 +2075,16 @@ function renderizarTabelaFaturas() {
         tabelaFaturasBody.appendChild(tr);
     });
 
-    // Marcar como PAGO (com verificação de expiração)
+    // Marcar como PAGO (sempre mostra modal com data sugerida ou vazia)
     document.querySelectorAll('.btn-marcar-pago').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const faturaId = e.currentTarget.dataset.id;
             const fatura = faturasCache[faturaId];
             try {
-                // Verificar se o cliente está expirado
+                // Verificar se o cliente está expirado e calcular sugestão
                 let clienteExpirado = false;
+                let dataSugerida = '';
+                let horaSugerida = '';
                 if (fatura && fatura.id_cliente) {
                     const clienteData = clientesCache[fatura.id_cliente];
                     if (clienteData && clienteData.data_vencimento_cliente) {
@@ -1793,52 +2097,37 @@ function renderizarTabelaFaturas() {
                                 dataVencAtual.setHours(23, 59, 59, 999);
                             }
                             clienteExpirado = dataVencAtual.getTime() <= Date.now();
+                            if (!clienteExpirado) {
+                                // Sugerir +30 dias a partir do vencimento atual
+                                const dataBase = parseDateDDMMAAAA(clienteData.data_vencimento_cliente);
+                                dataBase.setDate(dataBase.getDate() + 30);
+                                dataSugerida = formatDateDDMMAAAA(dataBase);
+                                const agora = new Date();
+                                horaSugerida = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+                            }
                         }
                     }
                 }
 
-                if (clienteExpirado) {
-                    // Cliente expirado: pedir nova data de vencimento via modal
-                    const novaDataInfo = await pedirNovaDataVencimento();
-                    if (!novaDataInfo) return; // Cancelou
+                const novaDataInfo = await pedirNovaDataVencimento(dataSugerida, horaSugerida);
+                if (!novaDataInfo) return; // Cancelou
 
-                    await updateDoc(doc(db, 'faturas', faturaId), { status_pagamento: 'pago' });
+                await updateDoc(doc(db, 'faturas', faturaId), { status_pagamento: 'pago' });
 
+                if (fatura && fatura.id_cliente) {
                     await updateDoc(doc(db, 'clientes', fatura.id_cliente), {
                         data_vencimento_cliente: novaDataInfo.data,
                         hora_validade: novaDataInfo.hora
                     });
                     clientesCache[fatura.id_cliente].data_vencimento_cliente = novaDataInfo.data;
                     clientesCache[fatura.id_cliente].hora_validade = novaDataInfo.hora;
-
-                    await registrarLog('fatura_pago', `Fatura ${fatura?.mes_referencia || faturaId} marcada como PAGO (cliente expirado, novo vencimento: ${novaDataInfo.data} ${novaDataInfo.hora})`);
-                    mostrarToast('Fatura marcada como PAGO! Novo vencimento definido.', 'sucesso');
-                } else {
-                    // Cliente NÃO expirado: auto-renovação +30 dias
-                    await updateDoc(doc(db, 'faturas', faturaId), { status_pagamento: 'pago' });
-
-                    if (fatura && fatura.id_cliente) {
-                        const clienteData = clientesCache[fatura.id_cliente];
-                        if (clienteData && clienteData.data_vencimento_cliente) {
-                            const dataVencAtual = parseDateDDMMAAAA(clienteData.data_vencimento_cliente);
-                            if (dataVencAtual) {
-                                dataVencAtual.setDate(dataVencAtual.getDate() + 30);
-                                const novaData = formatDateDDMMAAAA(dataVencAtual);
-                                const agora = new Date();
-                                const horaAtual = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
-                                await updateDoc(doc(db, 'clientes', fatura.id_cliente), {
-                                    data_vencimento_cliente: novaData,
-                                    hora_validade: horaAtual
-                                });
-                                clientesCache[fatura.id_cliente].data_vencimento_cliente = novaData;
-                                clientesCache[fatura.id_cliente].hora_validade = horaAtual;
-                            }
-                        }
-                    }
-
-                    await registrarLog('fatura_pago', `Fatura ${fatura?.mes_referencia || faturaId} marcada como PAGO`);
-                    mostrarToast('Fatura marcada como PAGO! Vencimento do cliente renovado.', 'sucesso');
                 }
+
+                const logMsg = clienteExpirado
+                    ? `Fatura ${fatura?.mes_referencia || faturaId} marcada como PAGO (cliente expirado, novo vencimento: ${novaDataInfo.data} ${novaDataInfo.hora})`
+                    : `Fatura ${fatura?.mes_referencia || faturaId} marcada como PAGO (novo vencimento: ${novaDataInfo.data} ${novaDataInfo.hora})`;
+                await registrarLog('fatura_pago', logMsg);
+                mostrarToast('Fatura marcada como PAGO! Novo vencimento definido.', 'sucesso');
 
                 incrementarFaturasPagas();
                 await carregarFaturas();
@@ -1950,9 +2239,9 @@ function pedirMotivo() {
 }
 
 // ========================================
-// MODAL NOVA DATA DE VENCIMENTO (cliente expirado)
+// MODAL NOVA DATA DE VENCIMENTO (marcar como pago)
 // ========================================
-function pedirNovaDataVencimento() {
+function pedirNovaDataVencimento(dataSugerida, horaSugerida) {
     return new Promise((resolve) => {
         const overlay = document.getElementById('modal-nova-data-vencimento');
         const inputData = document.getElementById('nova-data-venc-input');
@@ -1961,8 +2250,8 @@ function pedirNovaDataVencimento() {
         const btnCancelar = document.getElementById('btn-nova-data-cancelar');
         const btnFechar = document.getElementById('btn-fechar-modal-nova-data');
 
-        inputData.value = '';
-        inputHora.value = '';
+        inputData.value = dataSugerida || '';
+        inputHora.value = horaSugerida || '';
         overlay.style.display = 'flex';
 
         function limpar() {
@@ -2000,6 +2289,7 @@ function abrirModalEditarCliente(clienteId) {
     const dados = clientesCache[clienteId];
     if (!dados) { mostrarToast('Dados do cliente não encontrados.', 'erro'); return; }
     editarClienteId.value = clienteId;
+    editarClienteUid.value = clienteId;
     editarClienteNome.value = dados.nome_completo || '';
     editarClienteEmail.value = dados.email || '';
     editarClienteStatus.value = dados.status_conta || 'ativo';
@@ -2133,9 +2423,11 @@ function abrirModalEditarFatura(faturaId) {
     const nomeCliente = dadosCliente?.nome_completo || dadosCliente?.email || dados.id_cliente;
 
     editarFaturaId.value = faturaId;
+    editarFaturaUid.value = dados.id_cliente || faturaId;
     editarFaturaCliente.value = nomeCliente;
     editarFaturaMes.value = dados.mes_referencia || '';
     editarFaturaVencimento.value = dados.data_vencimento || '';
+    editarFaturaHoraValidade.value = dados.hora_validade || '';
     editarFaturaUrlPdf.value = dados.url_pdf_cloudinary || '';
     editarFaturaPix.value = dados.codigo_pix_copia || '';
     editarFaturaStatus.value = dados.status_pagamento || 'pendente';
@@ -2200,6 +2492,7 @@ btnSalvarEdicaoFatura.addEventListener('click', async () => {
         await updateDoc(doc(db, 'faturas', faturaId), {
             mes_referencia: mesRef,
             data_vencimento: dataVenc,
+            hora_validade: editarFaturaHoraValidade.value.trim(),
             url_pdf_cloudinary: urlPdf,
             codigo_pix_copia: codigoPix,
             status_pagamento: status
@@ -2362,8 +2655,8 @@ function abrirModalHistoricoCliente(clienteId, nomeCliente) {
     const logsCliente = logsCache.filter(log => {
         const detalhes = (log.detalhes || '').toLowerCase();
         return detalhes.includes(clienteId.toLowerCase()) ||
-               (nomeParaBusca && detalhes.includes(nomeParaBusca)) ||
-               (emailParaBusca && detalhes.includes(emailParaBusca));
+            (nomeParaBusca && detalhes.includes(nomeParaBusca)) ||
+            (emailParaBusca && detalhes.includes(emailParaBusca));
     });
 
     if (logsCliente.length === 0) {
@@ -2395,31 +2688,102 @@ function abrirModalHistoricoCliente(clienteId, nomeCliente) {
 }
 
 // ========================================
+// DETALHES DO CLIENTE (Modal Dashboard)
+// ========================================
+function abrirModalDetalhesCliente(clienteId) {
+    const dados = clientesCache[clienteId];
+    if (!dados) { mostrarToast('Cliente não encontrado.', 'erro'); return; }
+
+    const overlay = document.getElementById('modal-detalhes-cliente');
+    const corpo = document.getElementById('detalhes-cliente-corpo');
+
+    const calc = calcularDiasRestantes(dados.data_vencimento_cliente, dados.hora_validade);
+    const sit = dados.status_conta === 'suspenso' ? 'Suspenso' : (calc.situacao || '--');
+    const diasR = typeof calc.dias === 'number' ? `${calc.dias} dia(s)` : '--';
+    const ultimoAcesso = dados.ultimo_acesso ? (dados.ultimo_acesso.toDate ? dados.ultimo_acesso.toDate().toLocaleString('pt-BR') : new Date(dados.ultimo_acesso).toLocaleString('pt-BR')) : '--';
+
+    corpo.innerHTML = `
+        <div class="detalhes-grid">
+            <div class="detalhe-item"><span class="detalhe-label">Nome</span><span class="detalhe-valor">${escapeHTML(dados.nome_completo || '--')}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">E-mail</span><span class="detalhe-valor">${escapeHTML(dados.email || '--')}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">Telefone</span><span class="detalhe-valor">${escapeHTML(dados.telefone || '--')}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">CPF</span><span class="detalhe-valor">${escapeHTML(dados.cpf || '--')}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">Usuário</span><span class="detalhe-valor">${escapeHTML(dados.usuario || '--')}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">Pacote</span><span class="detalhe-valor">${escapeHTML(dados.pacote || '--')}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">Status</span><span class="detalhe-valor"><span class="badge badge-${dados.status_conta || 'ativo'}">${dados.status_conta || 'ativo'}</span></span></div>
+            <div class="detalhe-item"><span class="detalhe-label">Situação</span><span class="detalhe-valor">${escapeHTML(sit)}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">Vencimento</span><span class="detalhe-valor">${escapeHTML(dados.data_vencimento_cliente || '--')} ${escapeHTML(dados.hora_validade || '')}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">Dias Restantes</span><span class="detalhe-valor">${escapeHTML(diasR)}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">Último Acesso</span><span class="detalhe-valor">${ultimoAcesso}</span></div>
+            <div class="detalhe-item"><span class="detalhe-label">Observação</span><span class="detalhe-valor">${escapeHTML(dados.observacao || '--')}</span></div>
+            ${dados.endereco || dados.cidade ? `<div class="detalhe-item detalhe-full"><span class="detalhe-label">Endereço</span><span class="detalhe-valor">${escapeHTML([dados.endereco, dados.numero, dados.complemento, dados.bairro, dados.cidade, dados.estado, dados.cep].filter(Boolean).join(', ') || '--')}</span></div>` : ''}
+        </div>`;
+
+    overlay.style.display = 'flex';
+
+    function fechar() {
+        overlay.style.display = 'none';
+        overlay.removeEventListener('click', clickFora);
+    }
+    function clickFora(e) { if (e.target === overlay) fechar(); }
+    overlay.querySelector('.modal-btn-fechar').onclick = fechar;
+    overlay.addEventListener('click', clickFora);
+}
+
+// Delegação de evento para botão detalhes no dashboard
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-detalhes-cliente-dash');
+    if (btn) {
+        abrirModalDetalhesCliente(btn.dataset.id);
+    }
+});
+
+// ========================================
 // EXPORTAR CLIENTES (CSV / XLSX)
 // ========================================
 function exportarClientes(formato) {
     const lista = Object.entries(clientesCache).map(([id, dados]) => ({ id, ...dados }));
     if (lista.length === 0) { mostrarToast('Nenhum cliente para exportar.', 'erro'); return; }
 
-    const cabecalho = ['Nome', 'E-mail', 'Telefone', 'Usuário', 'Pacote', 'Situação', 'Data Vencimento'];
+    const cabecalho = ['Nome', 'E-mail', 'Telefone', 'CPF', 'Usuário', 'Senha', 'Pacote', 'Status Conta', 'Situação', 'Data Vencimento', 'Hora Validade', 'Dias Restantes', 'Último Acesso', 'Observação', 'Endereço', 'Número', 'Complemento', 'Bairro', 'Cidade', 'Estado', 'CEP'];
     const dados = lista.map(c => {
         const calc = calcularDiasRestantes(c.data_vencimento_cliente, c.hora_validade);
         const sit = c.status_conta === 'suspenso' ? 'Suspenso' : (calc.situacao || '--');
+        const diasR = typeof calc.dias === 'number' ? String(calc.dias) : '--';
+        const ultimoAcesso = c.ultimo_acesso
+            ? (c.ultimo_acesso.toDate ? c.ultimo_acesso.toDate().toLocaleString('pt-BR') : new Date(c.ultimo_acesso).toLocaleString('pt-BR'))
+            : '--';
+        const end = c.dados_endereco || {};
         return [
             c.nome_completo || '',
             c.email || '',
             c.telefone || '',
+            c.cpf || '',
             c.usuario || '',
+            c.senha_servico || '',
             c.pacote || '',
+            c.status_conta || 'ativo',
             sit,
-            c.data_vencimento_cliente || ''
+            c.data_vencimento_cliente || '',
+            c.hora_validade || '',
+            diasR,
+            ultimoAcesso,
+            c.observacao || '',
+            end.endereco || '',
+            end.numero || '',
+            end.complemento || '',
+            end.bairro || '',
+            end.cidade || '',
+            end.estado || '',
+            end.cep || ''
         ];
     });
 
+    const nomeArquivo = `clientes_icoutv_${new Date().toISOString().slice(0, 10)}`;
     if (formato === 'xlsx') {
-        gerarXLSX(cabecalho, dados, `clientes_icoutv_${new Date().toISOString().slice(0,10)}`);
+        gerarXLSX(cabecalho, dados, nomeArquivo);
     } else {
-        gerarCSV(cabecalho, dados, `clientes_icoutv_${new Date().toISOString().slice(0,10)}`);
+        gerarCSV(cabecalho, dados, nomeArquivo);
     }
     mostrarToast('Clientes exportados com sucesso!', 'sucesso');
 }
@@ -2442,9 +2806,9 @@ function exportarLogs(formato) {
     });
 
     if (formato === 'xlsx') {
-        gerarXLSX(cabecalho, dados, `logs_icoutv_${new Date().toISOString().slice(0,10)}`);
+        gerarXLSX(cabecalho, dados, `logs_icoutv_${new Date().toISOString().slice(0, 10)}`);
     } else {
-        gerarCSV(cabecalho, dados, `logs_icoutv_${new Date().toISOString().slice(0,10)}`);
+        gerarCSV(cabecalho, dados, `logs_icoutv_${new Date().toISOString().slice(0, 10)}`);
     }
     mostrarToast('Logs exportados com sucesso!', 'sucesso');
 }
@@ -2462,35 +2826,162 @@ function gerarCSV(cabecalho, linhas, nomeArquivo) {
 }
 
 // ========================================
-// GERAR XLSX (utilitário - formato XML Spreadsheet)
+// GERAR XLSX (formato OOXML real - .xlsx)
 // ========================================
 function gerarXLSX(cabecalho, linhas, nomeArquivo) {
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    xml += '<?mso-application progid="Excel.Sheet"?>\n';
-    xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n';
-    xml += ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n';
-    xml += '<Styles><Style ss:ID="Bold"><Font ss:Bold="1"/></Style></Styles>\n';
-    xml += '<Worksheet ss:Name="Dados"><Table>\n';
+    // Montar sharedStrings
+    const allStrings = [];
+    cabecalho.forEach(s => allStrings.push(String(s)));
+    linhas.forEach(row => row.forEach(v => allStrings.push(String(v))));
 
-    // Cabeçalho
-    xml += '<Row>';
-    cabecalho.forEach(col => {
-        xml += `<Cell ss:StyleID="Bold"><Data ss:Type="String">${escapeXML(col)}</Data></Cell>`;
+    let sharedStringsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+    sharedStringsXml += `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${allStrings.length}" uniqueCount="${allStrings.length}">`;
+    allStrings.forEach(s => { sharedStringsXml += `<si><t>${escapeXML(s)}</t></si>`; });
+    sharedStringsXml += '</sst>';
+
+    // Montar sheet1.xml
+    let sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+    sheetXml += '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+    sheetXml += '<sheetData>';
+    let idx = 0;
+    // Header row
+    sheetXml += '<row r="1">';
+    cabecalho.forEach((_, ci) => {
+        const col = String.fromCharCode(65 + (ci % 26)) + (ci >= 26 ? String.fromCharCode(65 + Math.floor(ci / 26) - 1) : '');
+        const ref = (ci < 26 ? String.fromCharCode(65 + ci) : 'A' + String.fromCharCode(65 + ci - 26)) + '1';
+        sheetXml += `<c r="${ref}" t="s" s="1"><v>${idx}</v></c>`;
+        idx++;
     });
-    xml += '</Row>\n';
-
-    // Dados
-    linhas.forEach(linha => {
-        xml += '<Row>';
-        linha.forEach(val => {
-            xml += `<Cell><Data ss:Type="String">${escapeXML(String(val))}</Data></Cell>`;
+    sheetXml += '</row>';
+    // Data rows
+    linhas.forEach((row, ri) => {
+        sheetXml += `<row r="${ri + 2}">`;
+        row.forEach((_, ci) => {
+            const ref = (ci < 26 ? String.fromCharCode(65 + ci) : 'A' + String.fromCharCode(65 + ci - 26)) + String(ri + 2);
+            sheetXml += `<c r="${ref}" t="s"><v>${idx}</v></c>`;
+            idx++;
         });
-        xml += '</Row>\n';
+        sheetXml += '</row>';
+    });
+    sheetXml += '</sheetData></worksheet>';
+
+    // Montar workbook.xml
+    const workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Dados" sheetId="1" r:id="rId1"/></sheets></workbook>';
+
+    // styles.xml (minimalista com negrito para header)
+    const stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs></styleSheet>';
+
+    // [Content_Types].xml
+    const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/></Types>';
+
+    // _rels/.rels
+    const relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+
+    // xl/_rels/workbook.xml.rels
+    const wbRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>';
+
+    // Criar ZIP manualmente (store method, sem compressão)
+    const files = [
+        { name: '[Content_Types].xml', data: contentTypes },
+        { name: '_rels/.rels', data: relsXml },
+        { name: 'xl/workbook.xml', data: workbookXml },
+        { name: 'xl/_rels/workbook.xml.rels', data: wbRelsXml },
+        { name: 'xl/styles.xml', data: stylesXml },
+        { name: 'xl/sharedStrings.xml', data: sharedStringsXml },
+        { name: 'xl/worksheets/sheet1.xml', data: sheetXml }
+    ];
+
+    const zipBlob = criarZipBlob(files);
+    downloadBlob(zipBlob, `${nomeArquivo}.xlsx`);
+}
+
+function criarZipBlob(files) {
+    const encoder = new TextEncoder();
+    const entries = files.map(f => ({ name: encoder.encode(f.name), data: encoder.encode(f.data) }));
+
+    let offset = 0;
+    const localHeaders = [];
+    const centralHeaders = [];
+
+    entries.forEach(entry => {
+        const localHeaderOffset = offset;
+        // CRC32
+        const crc = crc32(entry.data);
+        // Local file header (30 + nameLen + dataLen)
+        const lh = new Uint8Array(30 + entry.name.length);
+        const lhView = new DataView(lh.buffer);
+        lhView.setUint32(0, 0x04034b50, true); // signature
+        lhView.setUint16(4, 20, true);          // version needed
+        lhView.setUint16(6, 0, true);           // flags
+        lhView.setUint16(8, 0, true);           // compression (store)
+        lhView.setUint16(10, 0, true);          // mod time
+        lhView.setUint16(12, 0, true);          // mod date
+        lhView.setUint32(14, crc, true);        // crc32
+        lhView.setUint32(18, entry.data.length, true); // compressed size
+        lhView.setUint32(22, entry.data.length, true); // uncompressed size
+        lhView.setUint16(26, entry.name.length, true); // name length
+        lhView.setUint16(28, 0, true);          // extra field length
+        lh.set(entry.name, 30);
+        localHeaders.push({ header: lh, data: entry.data });
+        offset += lh.length + entry.data.length;
+
+        // Central directory header (46 + nameLen)
+        const ch = new Uint8Array(46 + entry.name.length);
+        const chView = new DataView(ch.buffer);
+        chView.setUint32(0, 0x02014b50, true);     // signature
+        chView.setUint16(4, 20, true);              // version made by
+        chView.setUint16(6, 20, true);              // version needed
+        chView.setUint16(8, 0, true);               // flags
+        chView.setUint16(10, 0, true);              // compression
+        chView.setUint16(12, 0, true);              // mod time
+        chView.setUint16(14, 0, true);              // mod date
+        chView.setUint32(16, crc, true);            // crc32
+        chView.setUint32(20, entry.data.length, true); // compressed size
+        chView.setUint32(24, entry.data.length, true); // uncompressed size
+        chView.setUint16(28, entry.name.length, true); // name length
+        chView.setUint16(30, 0, true);              // extra field length
+        chView.setUint16(32, 0, true);              // comment length
+        chView.setUint16(34, 0, true);              // disk number
+        chView.setUint16(36, 0, true);              // internal attributes
+        chView.setUint32(38, 0, true);              // external attributes
+        chView.setUint32(42, localHeaderOffset, true); // offset
+        ch.set(entry.name, 46);
+        centralHeaders.push(ch);
     });
 
-    xml += '</Table></Worksheet></Workbook>';
-    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    downloadBlob(blob, `${nomeArquivo}.xlsx`);
+    const centralDirOffset = offset;
+    let centralDirSize = 0;
+    centralHeaders.forEach(ch => centralDirSize += ch.length);
+
+    // End of central directory (22 bytes)
+    const eocd = new Uint8Array(22);
+    const eocdView = new DataView(eocd.buffer);
+    eocdView.setUint32(0, 0x06054b50, true);                // signature
+    eocdView.setUint16(4, 0, true);                          // disk number
+    eocdView.setUint16(6, 0, true);                          // central dir disk
+    eocdView.setUint16(8, entries.length, true);              // entries on this disk
+    eocdView.setUint16(10, entries.length, true);             // total entries
+    eocdView.setUint32(12, centralDirSize, true);             // central dir size
+    eocdView.setUint32(16, centralDirOffset, true);           // central dir offset
+    eocdView.setUint16(20, 0, true);                          // comment length
+
+    const parts = [];
+    localHeaders.forEach(lh => { parts.push(lh.header); parts.push(lh.data); });
+    centralHeaders.forEach(ch => parts.push(ch));
+    parts.push(eocd);
+
+    return new Blob(parts, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+function crc32(data) {
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < data.length; i++) {
+        crc ^= data[i];
+        for (let j = 0; j < 8; j++) {
+            crc = (crc >>> 1) ^ (crc & 1 ? 0xEDB88320 : 0);
+        }
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
 }
 
 function escapeXML(str) {
@@ -2588,9 +3079,9 @@ function criarCardConfirmacao(conf, isPendente) {
         </div>
         <div class="confirmacao-item-acoes">
             ${isPendente
-                ? `<button class="btn btn-sm btn-sucesso" data-resolver-confirmacao="${conf.id}" title="Marcar como resolvida">✔ Resolver</button>`
-                : '<span class="badge badge-ativo" style="font-size:var(--fonte-tamanho-xs);">Resolvida</span>'
-            }
+            ? `<button class="btn btn-sm btn-sucesso" data-resolver-confirmacao="${conf.id}" title="Marcar como resolvida">✔ Resolver</button>`
+            : '<span class="badge badge-ativo" style="font-size:var(--fonte-tamanho-xs);">Resolvida</span>'
+        }
             <button class="btn btn-sm btn-deletar-notificacao" data-deletar-confirmacao="${conf.id}" title="Excluir notificação" style="background:none;border:1px solid var(--cor-borda);color:var(--cor-texto-claro);padding:2px 6px;">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
@@ -2701,16 +3192,33 @@ function renderizarLogs() {
     }
 
     logsContainer.innerHTML = '';
-    lista.forEach(log => {
+    lista.forEach((log, index) => {
         const div = document.createElement('div');
-        div.className = 'log-item';
+        div.className = 'log-item log-item-clicavel';
+        div.dataset.logIndex = index;
         const dataStr = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : '--';
         const acaoLabel = (log.acao || '').replace(/_/g, ' ');
         div.innerHTML = `
-            <span class="log-acao">${escapeHTML(acaoLabel)}</span>
-            <span class="log-detalhe">${escapeHTML(log.detalhes || '')}</span>
+            <span class="log-acao celula-truncada">${escapeHTML(acaoLabel)}</span>
+            <span class="log-detalhe celula-truncada">${escapeHTML(log.detalhes || '')}</span>
             <span class="log-data">${dataStr}</span>
         `;
+        div.addEventListener('click', () => {
+            const overlay = document.getElementById('modal-detalhes-log');
+            const corpo = document.getElementById('detalhes-log-corpo');
+            corpo.innerHTML = `
+                <div class="detalhes-grid">
+                    <div class="detalhe-item"><span class="detalhe-label">Ação</span><span class="detalhe-valor">${escapeHTML(acaoLabel)}</span></div>
+                    <div class="detalhe-item detalhe-full"><span class="detalhe-label">Detalhes</span><span class="detalhe-valor" style="word-break:break-all;">${escapeHTML(log.detalhes || '--')}</span></div>
+                    <div class="detalhe-item"><span class="detalhe-label">Admin</span><span class="detalhe-valor">${escapeHTML(log.admin_email || '--')}</span></div>
+                    <div class="detalhe-item"><span class="detalhe-label">Data/Hora</span><span class="detalhe-valor">${dataStr}</span></div>
+                </div>`;
+            overlay.style.display = 'flex';
+            function fechar() { overlay.style.display = 'none'; overlay.removeEventListener('click', clickFora); }
+            function clickFora(e) { if (e.target === overlay) fechar(); }
+            overlay.querySelector('.modal-btn-fechar').onclick = fechar;
+            overlay.addEventListener('click', clickFora);
+        });
         logsContainer.appendChild(div);
     });
 }

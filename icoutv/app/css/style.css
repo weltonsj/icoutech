@@ -27,6 +27,9 @@
     --cor-pendente: #f59e0b;
     --cor-pendente-fundo: #fef3c7;
     --cor-borda: #e5e5e0;
+    --cor-fundo-card: #ffffff;
+    --cor-info: #17a2b8;
+    --cor-secundaria: #6c757d;
 
     /* Tipografia */
     --fonte-principal: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -1095,12 +1098,56 @@ select.form-input {
     white-space: nowrap;
 }
 
+/* ---------- Colunas especificas Tabela de Clientes (Admin) ---------- */
+.tabela-clientes th.col-status-clientes {
+    width: 70px;
+}
+
+.tabela-clientes th.col-situacao-clientes {
+    width: 120px;
+    text-align: center;
+}
+
+.tabela-clientes th.col-obs-clientes {
+    width: 10px;
+    text-align: center;
+}
+
+.tabela-clientes td.td-obs {
+    text-align: center;
+}
+
+.tabela-clientes th.col-acoes-clientes {
+    text-align: center;
+    width: 200px;
+}
+
+/* ---------- Colunas especificas Tabela de Faturas (Admin) ---------- */
+.tabela-faturas th.col-referencia-faturas {
+    width: 120px;
+}
+
+.tabela-faturas th.col-vencimento-faturas {
+    width: 120px;
+}
+
+.tabela-faturas th.col-status-faturas {
+    width: 100px;
+}
+
+.tabela-faturas th.col-acoes-faturas {
+    width: 150px;
+    text-align: center;
+}
+
+
 /* ---------- Mini Menu de Ações ---------- */
 .acoes-container {
     display: flex;
     align-items: center;
     gap: var(--espacamento-xs);
     position: relative;
+    justify-content: flex-end;
 }
 
 .acoes-inline {
@@ -1182,6 +1229,43 @@ select.form-input {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
+}
+
+/* Submenu WhatsApp categorias */
+.acoes-submenu-trigger {
+    position: relative;
+}
+
+.acoes-submenu {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    min-width: 160px;
+    background: var(--cor-fundo-card, #fff);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-raio-md);
+    box-shadow: var(--sombra-md);
+    z-index: 1001;
+    padding: 4px 0;
+}
+
+.acoes-submenu-trigger:hover > .acoes-submenu {
+    display: block;
+}
+
+.acoes-submenu-item {
+    display: block;
+    padding: 6px 12px;
+    font-size: var(--fonte-tamanho-xs);
+    color: var(--cor-texto);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: var(--transicao);
+}
+
+.acoes-submenu-item:hover {
+    background: var(--cor-fundo);
 }
 
 /* Mini menu dentro de msg-acoes (layout vertical) */
@@ -1363,7 +1447,7 @@ select.form-input {
 
 /* ---------- Dashboard Alertas Grid ---------- */
 .dash-alertas-grid {
-    display: grid;
+    /* display: grid; */
     grid-template-columns: 1fr 1fr;
     gap: var(--espacamento-md);
     margin-bottom: var(--espacamento-xl);
@@ -1497,7 +1581,7 @@ select.form-input {
     }
 
     .celula-truncada {
-        max-width: 90px;
+        max-width: 75px;
     }
 
     .acoes-inline {
@@ -1518,6 +1602,19 @@ select.form-input {
 
     .topbar-email {
         display: none;
+    }
+
+    .col-email-clientes,
+    .col-telefone-dash,
+    .col-vencimento-faturas,
+    .col-obs-clientes,
+    .td-obs,
+    .col-uid-faturas {
+        display: none;
+    }
+
+    .topbar-versao {
+        display: inline-block;
     }
 
     .admin-container {
@@ -2109,6 +2206,14 @@ select.form-input {
     padding: var(--espacamento-xs) var(--espacamento-sm);
     text-align: left;
     border-bottom: 1px solid var(--cor-borda);
+}
+
+.tabela-alertas .col-acoes {
+    text-align: right;
+}
+
+.tabela-clientes .acoes {
+    text-align: center;
 }
 
 .tabela-alertas th {
@@ -2961,5 +3066,118 @@ select.form-input {
     color: var(--cor-texto-claro);
     opacity: 0.7;
     margin-top: var(--espacamento-xl);
+}
+
+/* ============================================
+   Versão no Topbar (Mobile)
+   ============================================ */
+.topbar-versao {
+    display: none;
+    font-size: var(--fonte-tamanho-xs);
+    color: var(--cor-texto-claro);
+    opacity: 0.7;
+    padding: 2px 8px;
+    border-radius: var(--borda-raio-sm);
+    background: var(--cor-fundo);
+}
+
+/* ============================================
+   Modal Detalhes (Grid)
+   ============================================ */
+.detalhes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--espacamento-md);
+    padding: var(--espacamento-md) 0;
+}
+
+.detalhe-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detalhe-label {
+    font-size: var(--fonte-tamanho-xs);
+    color: var(--cor-texto-claro);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detalhe-valor {
+    font-size: var(--fonte-tamanho-sm);
+    color: var(--cor-texto);
+    word-break: break-word;
+}
+
+.detalhe-full {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+    .detalhes-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   Log Item Clicável
+   ============================================ */
+.log-item-clicavel {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.log-item-clicavel:hover {
+    background: var(--cor-primaria-light);
+}
+
+/* ============================================
+   Alerta Item Ações (Dashboard Expirados)
+   ============================================ */
+.alerta-item-acoes {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* ============================================
+   Lista de Mensagens WhatsApp
+   ============================================ */
+.wa-msg-item {
+    display: flex;
+    align-items: center;
+    gap: var(--espacamento-sm);
+    padding: var(--espacamento-sm) var(--espacamento-md);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--borda-raio-sm);
+    background: var(--cor-branco);
+    margin-bottom: var(--espacamento-sm);
+}
+
+.wa-msg-categoria {
+    font-size: var(--fonte-tamanho-xs);
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--borda-raio-full);
+    background: var(--cor-primaria-light);
+    color: var(--cor-primaria);
+    white-space: nowrap;
+}
+
+.wa-msg-texto {
+    flex: 1;
+    font-size: var(--fonte-tamanho-sm);
+    color: var(--cor-texto);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 300px;
+}
+
+.wa-msg-acoes {
+    display: flex;
+    gap: var(--espacamento-xs);
+    flex-shrink: 0;
 }
 

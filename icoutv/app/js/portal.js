@@ -72,6 +72,13 @@ async function carregarDadosCliente(user) {
         nomeCliente = dados.nome_completo || 'Cliente';
         statusDaConta = dados.status_conta || 'ativo';
 
+        // Registrar último acesso
+        try {
+            await updateDoc(clienteRef, { ultimo_acesso: serverTimestamp() });
+        } catch (e) {
+            console.warn('Não foi possível registrar último acesso:', e);
+        }
+
         // Calcular campos dinâmicos
         if (dados.data_vencimento_cliente) {
             const dataVenc = parseDateDDMMAAAA(dados.data_vencimento_cliente);
